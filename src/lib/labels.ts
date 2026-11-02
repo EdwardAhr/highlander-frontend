@@ -25,15 +25,6 @@ export const ROLE_LABELS: Record<Role, string> = {
   superadmin: "Суперадмин",
 };
 
-/** Цвет Tailwind для бейджа статуса брони. */
-export const BOOKING_STATUS_STYLES: Record<BookingStatus, string> = {
-  pending: "bg-amber-100 text-amber-800",
-  confirmed: "bg-sky-100 text-sky-800",
-  paid: "bg-violet-100 text-violet-800",
-  active: "bg-emerald-100 text-emerald-800",
-  rejected: "bg-rose-100 text-rose-800",
-};
-
 export function formatPrice(price: string | null | undefined): string {
   if (price == null || price === "") return "—";
   const n = Number(price);

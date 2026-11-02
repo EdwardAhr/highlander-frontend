@@ -8,6 +8,9 @@ import { requestOtp } from "@/lib/queries";
 import { apiError } from "@/lib/errors";
 import { Spinner } from "@/components/ui";
 
+const inputCls =
+  "rounded-control border border-border bg-surface px-3 py-2 outline-none focus:border-accent focus:shadow-glow";
+
 export default function LoginPage() {
   return (
     <Suspense fallback={<Spinner />}>
@@ -76,15 +79,15 @@ function LoginForm() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-bold tracking-tight">Вход</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="font-display text-2xl font-semibold tracking-tight">Вход</h1>
+      <p className="mt-1 text-sm text-muted">
         Нет аккаунта?{" "}
-        <Link href="/register" className="font-medium text-zinc-900 underline">
+        <Link href="/register" className="font-medium text-accent underline underline-offset-2">
           Зарегистрироваться
         </Link>
       </p>
 
-      <div className="mt-5 flex rounded-lg bg-zinc-100 p-1">
+      <div className="mt-5 flex rounded-control bg-fog p-1">
         {(["password", "otp"] as const).map((m) => (
           <button
             key={m}
@@ -93,7 +96,7 @@ function LoginForm() {
               setError(null);
             }}
             className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === m ? "bg-white shadow-sm" : "text-zinc-600"
+              mode === m ? "bg-surface shadow-card" : "text-muted"
             }`}
           >
             {m === "password" ? "По паролю" : "По коду (OTP)"}
@@ -104,32 +107,32 @@ function LoginForm() {
       {mode === "password" ? (
         <form onSubmit={handlePassword} className="mt-5 flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-600">Email</span>
+            <span className="font-medium text-muted">Email</span>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+              className={inputCls}
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-600">Пароль</span>
+            <span className="font-medium text-muted">Пароль</span>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+              className={inputCls}
             />
           </label>
 
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+          {error ? <p className="text-sm text-danger">{error}</p> : null}
 
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
+            className="rounded-control bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
           >
             {loading ? "Вход…" : "Войти"}
           </button>
@@ -140,45 +143,41 @@ function LoginForm() {
           className="mt-5 flex flex-col gap-3"
         >
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-600">Email</span>
+            <span className="font-medium text-muted">Email</span>
             <input
               type="email"
               required
               value={email}
               disabled={otpSent}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500 disabled:bg-zinc-100"
+              className={`${inputCls} disabled:bg-fog`}
             />
           </label>
 
           {otpSent ? (
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-zinc-600">Код</span>
+              <span className="font-medium text-muted">Код</span>
               <input
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="6 цифр"
-                className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+                className={inputCls}
               />
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-faint">
                 В dev-режиме (DEBUG=true) код печатается в консоль бэкенда.
               </span>
             </label>
           ) : null}
 
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+          {error ? <p className="text-sm text-danger">{error}</p> : null}
 
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
+            className="rounded-control bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
           >
-            {loading
-              ? "Отправка…"
-              : otpSent
-                ? "Подтвердить"
-                : "Отправить код"}
+            {loading ? "Отправка…" : otpSent ? "Подтвердить" : "Отправить код"}
           </button>
         </form>
       )}

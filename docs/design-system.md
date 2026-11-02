@@ -3,58 +3,60 @@
 Единые конвенции дизайна и архитектуры фронтенда. Читай перед любыми визуальными
 или структурными изменениями.
 
+## Система двух тем
+
+Один набор **семантических CSS-токенов**, две темы:
+- **Светлая** («Утренний воздух») — значения по умолчанию в `:root`.
+- **Тёмная** («Перевал») — переопределение в `:root[data-theme="dark"]`.
+
+Переключение — кнопкой в шапке. Атрибут `data-theme` на `<html>`, значение в
+`localStorage["highlander-theme"]`, по умолчанию — `prefers-color-scheme`.
+Токены описаны в `src/app/globals.css`, логика — `src/lib/theme.tsx` (`useTheme`).
+
 ## Стек
 
 - **Next.js 16** (App Router, Turbopack), React 19, TypeScript (strict)
-- **Tailwind CSS v4** (утилиты), TanStack Query, `openapi-fetch`
-- Шрифт: **Geist** (`--font-geist-sans`) — основной, Geist Mono для кода
+- **Tailwind CSS v4** (`@theme inline` маппит токены на утилиты), TanStack Query, `openapi-fetch`
+- Шрифты (next/font/google, все с кириллицей):
+  - **Inter** — body/UI (обе темы)
+  - **Playfair Display** — display-заголовки в тёмной теме
+  - **Manrope** — display-заголовки в светлой теме
+  - **IBM Plex Mono** — цены, даты, данные
+  - **Unbounded** — логотип
 
-## Цветовая палитра
+## Токены (утилиты Tailwind)
 
-- Нейтральные — **Tailwind `zinc`** (`zinc-50`…`zinc-900`)
-  - Фон страницы `zinc-50`, карточки `bg-white` с `border-zinc-200`
-  - Текст основной `zinc-900`, вторичный `zinc-500`/`zinc-600`
-- Акцент — **`emerald`** (`emerald-600`/`emerald-500`) — только для действий успеха
-  и ключевых CTA (например, «Оплатить»)
-- Основная кнопка — `bg-zinc-900 text-white` (тёмная), hover `zinc-700`
-- Статусы брони — см. `src/lib/labels.ts` (`BOOKING_STATUS_STYLES`)
+| Токен | Утилиты | Светлая | Тёмная |
+|---|---|---|---|
+| фон | `bg-background` | `#F4F8F9` | `#0B1017` |
+| поверхность | `bg-surface` | `#FFFFFF` | `#141C26` |
+| текст | `text-foreground` | `#172530` | `#E9E4D8` |
+| вторичный | `text-muted` | `#63757F` | `#8FA0AE` |
+| третичный | `text-faint` | `#8A9BA5` | `#5A6B78` |
+| акцент | `bg-accent` / `text-accent` | `#3E7C8C` | `#E0A458` |
+| акцент hover | `bg-accent-hover` | `#356A78` | `#E8B373` |
+| текст на акценте | `text-accent-contrast` | `#FFFFFF` | `#1A1205` |
+| граница | `border-border` | `#DFEAEE` | `#2A3644` |
+| подложка | `bg-fog` | `#E7F0F3` | `#101A24` |
+| ошибка | `text-danger` | `#C0392B` | `#E07A6B` |
 
-Не вводи новые оттенки без причины. Тёмная тема не используется (MVP — светлая).
+Радиусы: `rounded-card` (16px светлая / 12px тёмная), `rounded-control` (10/8).
+Тени: `shadow-card`, `shadow-elevated` (светлая — мягкие; тёмная — 1px-рамка).
+Фокус: `focus:shadow-glow`.
 
-## Отступы и размеры
+Статусы брони — пары переменных `--status-*-bg`/`--status-*-text` (см. `globals.css`,
+используются в `booking-status-badge.tsx`).
 
-- Сетка отступов — кратно **4px** (основной шаг 8px: `p-4`, `gap-5`, `py-8`)
-- Радиус скруглений: карточки `rounded-xl`, контролы `rounded-lg`
-- Ширина контента — `max-w-6xl` с `px-4` (см. `src/app/layout.tsx`)
+## Правила
 
-## Компоненты и слои
+- Компоненты пишутся **один раз** на семантических токенах — тема меняется только через CSS-переменные.
+- Заголовки — `font-display`, цены/даты — `font-mono`, текст — Inter (по умолчанию).
+- Примитивы — в `src/components/ui.tsx`; конкретные компоненты — в `src/components/`; страницы — в `src/app/`.
+- Типы бери из `src/lib/api/schema.d.ts` (генерируются из `docs/openapi.json`).
+- Состояния интерфейса обязательны: loading (`Spinner`), пусто (`EmptyState`), ошибка (`ErrorState` + `apiError()`).
+- Опенер (`src/components/opener.tsx`) играет один раз за сессию, цвета — из токенов темы.
 
-| Слой | Путь | Что там |
-|---|---|---|
-| Типы и клиент API | `src/lib/api/` | `schema.d.ts` (генерируется из `docs/openapi.json`), `client.ts` |
-| Данные | `src/lib/queries.ts` | функции-запросы (TanStack Query) |
-| Логика | `src/lib/` | `auth/`, `labels.ts`, `errors.ts`, `providers.tsx` |
-| Примитивы UI | `src/components/ui.tsx` | `Spinner`, `EmptyState`, `ErrorState` |
-| Компоненты | `src/components/` | `header.tsx`, `tour-card.tsx`, `booking-status-badge.tsx` |
-| Страницы | `src/app/` | маршруты и компоновка |
+## Слои
 
-Правила:
-- Примитивы — в `ui.tsx`; конкретные компоненты — в `src/components/`; страницы — в `src/app/`.
-- Не дублируй разметку — переиспользуй/расширяй существующее.
-- Типы бери из `src/lib/api/schema.d.ts`, не описывай руками.
-
-## Состояния интерфейса (обязательно)
-
-Каждый экран прорабатывает: **loading** (`Spinner`), **пусто** (`EmptyState`),
-**ошибка** (`ErrorState` + `apiError()`), а кнопки/инпуты — `hover`/`focus`/`disabled`.
-
-## Единый формат ошибок
-
-Бэкенд возвращает `{ error: { code, message, details } }`. Маппинг — через
-`apiError()` из `src/lib/errors.ts`.
-
-## Архитектурные принципы
-
-- Композиция поверх конфигурации (см. скилл `vercel-composition-patterns`).
-- Изменения типов/контракта приходят только из `docs/openapi.json` (бэкенд).
-- Авторизация: JWT в `localStorage`, авто-refresh на 401 — в `src/lib/api/client.ts`.
+`src/lib/api` (типы/клиент) → `src/lib/queries.ts` (данные) → `src/lib/*` (auth/theme/labels) →
+`src/components` (UI) → `src/app` (маршруты).

@@ -19,6 +19,9 @@ const SORT_OPTIONS: { value: TourSort; label: string }[] = [
 
 const PAGE_SIZE = 20;
 
+const inputCls =
+  "rounded-control border border-border bg-surface px-3 py-2 outline-none focus:border-accent focus:shadow-glow";
+
 export default function Storefront() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<TourSort>("-created_at");
@@ -45,18 +48,17 @@ export default function Storefront() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
           Горные туры Северного Кавказа
         </h1>
-        <p className="mt-1 text-zinc-500">
-          Бронируйте проверенные маршруты с гидами, страховкой и регистрацией в МЧС.
+        <p className="mt-2 text-muted">
+          Проверенные маршруты с гидами, страховкой и регистрацией в МЧС.
         </p>
       </div>
 
-      {/* Фильтры */}
-      <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 md:flex-row md:items-end">
+      <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-card md:flex-row md:items-end">
         <label className="flex flex-1 flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-600">Поиск</span>
+          <span className="font-medium text-muted">Поиск</span>
           <input
             value={query}
             onChange={(e) => {
@@ -64,12 +66,12 @@ export default function Storefront() {
               setOffset(0);
             }}
             placeholder="Название тура…"
-            className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            className={inputCls}
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-600">Цена от</span>
+          <span className="font-medium text-muted">Цена от</span>
           <input
             type="number"
             min={0}
@@ -79,12 +81,12 @@ export default function Storefront() {
               setOffset(0);
             }}
             placeholder="0"
-            className="w-28 rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            className={`w-28 ${inputCls}`}
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-600">до</span>
+          <span className="font-medium text-muted">до</span>
           <input
             type="number"
             min={0}
@@ -94,19 +96,19 @@ export default function Storefront() {
               setOffset(0);
             }}
             placeholder="∞"
-            className="w-28 rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            className={`w-28 ${inputCls}`}
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-600">Сортировка</span>
+          <span className="font-medium text-muted">Сортировка</span>
           <select
             value={sort}
             onChange={(e) => {
               setSort(e.target.value as TourSort);
               setOffset(0);
             }}
-            className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            className={inputCls}
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -117,7 +119,6 @@ export default function Storefront() {
         </label>
       </div>
 
-      {/* Результаты */}
       {isPending ? (
         <Spinner />
       ) : error ? (
@@ -140,7 +141,7 @@ export default function Storefront() {
               <button
                 onClick={() => setOffset((o) => o + PAGE_SIZE)}
                 disabled={isFetching}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-100 disabled:opacity-50"
+                className="rounded-control border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-fog disabled:opacity-50"
               >
                 Показать ещё
               </button>
