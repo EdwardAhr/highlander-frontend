@@ -1,7 +1,7 @@
 ---
 description: Беспощадный ревьюер мостика — проверяет, что спеки реализуемы и поддерживаемы, вне контекста
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
+model: ollama-cloud/mistral-large-4
 permissions:
   - action: edit
     resource: "*"

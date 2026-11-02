@@ -1,7 +1,7 @@
 ---
 description: Сеньор-фронтендер — реализует и поддерживает качественный код на Next.js 16 + React 19 + TS
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
+model: ollama-cloud/kimi-k2.7-code
 color: "#3b82f6"
 ---
 

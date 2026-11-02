@@ -1,7 +1,7 @@
 ---
 description: Мостик design↔frontend — переводит идеи дизайнера в реализуемые и поддерживаемые спеки
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
+model: ollama-cloud/glm-5.3
 color: "#8b5cf6"
 ---
 

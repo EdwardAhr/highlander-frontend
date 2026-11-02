@@ -1,7 +1,7 @@
 ---
 description: Беспощадный ревьюер UX/UI-дизайнера — судит только по фактическим решениям, вне контекста
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
+model: ollama-cloud/mistral-large-4
 permissions:
   - action: edit
     resource: "*"

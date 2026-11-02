@@ -1,7 +1,7 @@
 ---
 description: Беспощадный ревьюер сеньор-фронтендера — судит только по фактическому коду, вне контекста
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
+model: ollama-cloud/kimi-k3
 permissions:
   - action: edit
     resource: "*"

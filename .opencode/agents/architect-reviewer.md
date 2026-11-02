@@ -1,7 +1,7 @@
 ---
 description: Беспощадный ревьюер архитектора — проверяет расширяемость и PWA/мультиплатформенность, вне контекста
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
+model: ollama-cloud/kimi-k3
 permissions:
   - action: edit
     resource: "*"

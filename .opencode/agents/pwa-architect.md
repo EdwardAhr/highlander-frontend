@@ -1,7 +1,7 @@
 ---
 description: Архитектор — проектирует расширяемую, мультиплатформенную PWA-систему
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
+model: ollama-cloud/glm-5.3
 color: "#14b8a6"
 ---
 
