@@ -33,6 +33,7 @@ function resolveTheme(mode: ThemeMode): Theme {
 type ThemeContextValue = {
   mode: ThemeMode;
   theme: Theme;
+  mounted: boolean;
   setMode: (m: ThemeMode) => void;
   toggle: () => void;
 };
@@ -41,20 +42,23 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>("system");
+  const [mounted, setMounted] = useState(false);
 
-  // Восстанавливаем сохранённый режим после гидрации.
+  // После гидрации восстанавливаем сохранённый режим.
   useEffect(() => {
     setModeState(getStoredMode());
+    setMounted(true);
   }, []);
 
   // Применяем тему к <html>.
   useEffect(() => {
+    if (typeof document === "undefined") return;
     document.documentElement.dataset.theme = resolveTheme(mode);
   }, [mode]);
 
   // Синхронизация с системной темой в режиме "system".
   useEffect(() => {
-    if (mode !== "system") return;
+    if (mode !== "system" || typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
       document.documentElement.dataset.theme = mq.matches ? "dark" : "light";
@@ -73,17 +77,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggle = useCallback(() => {
-    const current = resolveTheme(
-      typeof window !== "undefined" ? getStoredMode() : "system",
-    );
+    const current = resolveTheme(getStoredMode());
     setMode(current === "dark" ? "light" : "dark");
   }, [setMode]);
 
-  const theme = useMemo(() => resolveTheme(mode), [mode]);
+  // До монтирования отдаём стабильную "light" — совпадает с SSR и не ломает гидрацию.
+  const theme = useMemo<Theme>(
+    () => (mounted ? resolveTheme(mode) : "light"),
+    [mounted, mode],
+  );
 
   const value = useMemo(
-    () => ({ mode, theme, setMode, toggle }),
-    [mode, theme, setMode, toggle],
+    () => ({ mode, theme, mounted, setMode, toggle }),
+    [mode, theme, mounted, setMode, toggle],
   );
 
   return (
