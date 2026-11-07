@@ -1,26 +1,214 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Токены дизайн-системы Highlander.
+   Светлая тема «Утренний воздух» — по умолчанию (:root).
+   Тёмная тема «Перевал» — переопределение [data-theme="dark"].
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #F4F8F9;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --text: #172530;
+  --text-secondary: #63757F;
+  --text-muted: #8A9BA5;
+  --accent: #3E7C8C;
+  --accent-hover: #356A78;
+  --accent-contrast: #FFFFFF;
+  --border: #DFEAEE;
+  --border-strong: #C7DEE3;
+  --mist: #C7DEE3;
+  --fog: #E7F0F3;
+  --overlay: rgb(23 37 48 / 0.04);
+  --danger: #C0392B;
+
+  --status-pending-bg: #FDF3E3;
+  --status-pending-text: #9A6B1F;
+  --status-confirmed-bg: #E3F0F4;
+  --status-confirmed-text: #2A6A7C;
+  --status-paid-bg: #EDE7F6;
+  --status-paid-text: #6B4C9A;
+  --status-active-bg: #E4F1EA;
+  --status-active-text: #2A7A4A;
+  --status-rejected-bg: #FBE9E7;
+  --status-rejected-text: #A63A30;
+
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 2px 8px rgb(23 37 48 / 0.05), 0 12px 32px rgb(23 37 48 / 0.07);
+  --shadow-elevated: 0 8px 24px rgb(23 37 48 / 0.12), 0 2px 6px rgb(23 37 48 / 0.06);
+  --shadow-glow: 0 0 0 3px rgb(62 124 140 / 0.18);
+
+  --font-display-active: var(--font-manrope);
 }
 
+:root[data-theme="dark"] {
+  --bg: #0B1017;
+  --surface: #141C26;
+  --surface-raised: #1A2531;
+  --text: #E9E4D8;
+  --text-secondary: #8FA0AE;
+  --text-muted: #5A6B78;
+  --accent: #E0A458;
+  --accent-hover: #E8B373;
+  --accent-contrast: #1A1205;
+  --border: #2A3644;
+  --border-strong: #3A4A5C;
+  --mist: #6C8FA3;
+  --fog: #101A24;
+  --overlay: rgb(0 0 0 / 0.55);
+  --danger: #E07A6B;
+
+  --status-pending-bg: #2A2418;
+  --status-pending-text: #E0A458;
+  --status-confirmed-bg: #15262C;
+  --status-confirmed-text: #6C8FA3;
+  --status-paid-bg: #231B2E;
+  --status-paid-text: #B493D9;
+  --status-active-bg: #14261C;
+  --status-active-text: #7AC992;
+  --status-rejected-bg: #2C1B1A;
+  --status-rejected-text: #E08A7B;
+
+  --radius-card: 12px;
+  --radius-control: 8px;
+
+  --shadow-card: 0 0 0 1px rgb(42 54 68 / 0.5);
+  --shadow-elevated: 0 0 0 1px rgb(58 74 92 / 0.6), 0 12px 32px rgb(0 0 0 / 0.5);
+  --shadow-glow: 0 0 0 3px rgb(224 164 88 / 0.22);
+
+  --font-display-active: var(--font-playfair);
+}
+
+/* Маппинг токенов в Tailwind-утилиты */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-foreground: var(--text);
+  --color-muted: var(--text-secondary);
+  --color-faint: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-mist: var(--mist);
+  --color-fog: var(--fog);
+  --color-danger: var(--danger);
+
+  --radius-card: var(--radius-card);
+  --radius-control: var(--radius-control);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-elevated: var(--shadow-elevated);
+  --shadow-glow: var(--shadow-glow);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-display-active);
+  --font-mono: var(--font-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ============================================================
+   Базовые стили
+   ============================================================ */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ============================================================
+   Опенер (вступительная анимация)
+   ============================================================ */
+
+.opener {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease;
+}
+.opener.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.opener-fog {
+  position: absolute;
+  width: 60vw;
+  height: 45vh;
+  border-radius: 50%;
+  filter: blur(48px);
+  background: var(--mist);
+  opacity: 0.4;
+  animation: opener-drift 2.8s ease forwards;
+}
+.opener-fog.b {
+  width: 50vw;
+  height: 38vh;
+  background: var(--fog);
+  opacity: 0.6;
+  animation-name: opener-drift-rev;
+}
+@keyframes opener-drift {
+  from { transform: translateY(6vh) scale(1); }
+  to { transform: translateY(-8vh) scale(1.15); }
+}
+@keyframes opener-drift-rev {
+  from { transform: translateY(-6vh) scale(1); }
+  to { transform: translateY(8vh) scale(1.1); }
+}
+.opener-mark {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.opener-mark svg {
+  width: 96px;
+  height: 96px;
+}
+.opener-mark path.ridge {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: opener-draw 1.6s ease 0.3s forwards;
+}
+@keyframes opener-draw {
+  to { stroke-dashoffset: 0; }
+}
+.opener-word {
+  font-family: var(--font-display-active);
+  font-weight: 600;
+  font-size: clamp(24px, 5vw, 40px);
+  color: var(--text);
+  letter-spacing: 0.01em;
+  clip-path: inset(0 0 100% 0);
+  animation: opener-reveal 0.9s ease 0.9s forwards;
+}
+@keyframes opener-reveal {
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opener-fog,
+  .opener-mark path.ridge,
+  .opener-word {
+    animation: none;
+    clip-path: none;
+    stroke-dashoffset: 0;
+  }
 }

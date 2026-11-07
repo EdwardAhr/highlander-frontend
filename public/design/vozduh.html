@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Highlander — «Утренний воздух» (светлый, воздушный)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;500;700&family=Unbounded:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F8F9;--card:#FFFFFF;--text:#172530;--muted:#63757F;--accent:#3E7C8C;--light:#C7DEE3;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Manrope,sans-serif;overflow-x:hidden}
+
+/* ===== OPENER ===== */
+.opener{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .6s ease}
+.opener.gone{opacity:0;pointer-events:none}
+.blob{position:absolute;border-radius:42% 58% 60% 40%/45% 45% 55% 55%;filter:blur(28px);opacity:.55;background:var(--light)}
+.b1{width:55vw;height:40vh;left:-8vw;top:8vh;animation:morph 3.2s ease infinite}
+.b2{width:45vw;height:34vh;right:-6vw;bottom:10vh;animation:morph 3.6s ease infinite reverse;background:#B6D6DD}
+@keyframes morph{0%,100%{border-radius:42% 58% 60% 40%/45% 45% 55% 55%}50%{border-radius:60% 40% 40% 60%/55% 55% 45% 45%}}
+.center{position:relative;text-align:center}
+.center svg{width:180px;height:120px}
+.center path{fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-dasharray:600;stroke-dashoffset:600;animation:draw 2.6s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.center .wm{font-family:Unbounded,sans-serif;font-size:22px;margin-top:10px;opacity:0;animation:fade 1s ease 2.2s forwards;letter-spacing:.02em}
+@keyframes fade{to{opacity:1}}
+
+/* ===== MOODBOARD ===== */
+.wrap{max-width:1060px;margin:0 auto;padding:64px 24px}
+h1{font-family:Manrope,sans-serif;font-weight:300;font-size:56px;line-height:1.08;letter-spacing:-.01em}
+h1 em{color:var(--accent);font-style:normal;font-weight:500}
+.lead{color:var(--muted);font-size:18px;margin-top:16px;max-width:560px}
+.section{margin-top:64px}
+h2{font-weight:700;font-size:22px;margin-bottom:20px}
+.swatches{display:flex;gap:12px;flex-wrap:wrap}
+.sw{width:120px}
+.sw i{display:block;height:72px;border-radius:14px;border:1px solid #E3ECEF;box-shadow:0 2px 8px rgba(23,37,48,.04)}
+.sw b{display:block;font-size:11px;color:var(--muted);margin-top:6px}
+.typespec p{margin:8px 0}
+.typespec .display{font-weight:300;font-size:40px}
+.typespec .body{font-size:18px}
+.typespec .muted{font-size:15px;color:var(--muted)}
+
+/* ===== STOREFRONT ===== */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 6px 24px rgba(23,37,48,.06)}
+.card .img{height:150px;border-radius:12px;background:linear-gradient(160deg,#C7DEE3,#EDF4F5)}
+.card .body{padding:10px 6px 4px}
+.card h3{font-weight:700;font-size:17px;line-height:1.25}
+.card .price{margin-top:8px;font-weight:700;color:var(--accent)}
+.card .meta{font-size:12px;color:var(--muted);margin-top:3px}
+.cta{display:inline-block;margin-top:28px;padding:12px 24px;background:var(--accent);color:#fff;border-radius:12px;font-weight:700;text-decoration:none}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="opener" id="opener">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="center">
+    <svg viewBox="0 0 180 120"><path d="M10 100 L70 40 Q90 60 95 52 L170 100"/></svg>
+    <div class="wm">highlander</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Воздух, в котором <em>живут</em> горы.</h1>
+  <p class="lead">Направление «Утренний воздух» — горы, растворённые в утреннем тумане. Много белого, один семейный шрифт, мягкий акцент «ледниковое озеро».</p>
+
+  <div class="section">
+    <h2>Палитра</h2>
+    <div class="swatches">
+      <div class="sw"><i style="background:#F4F8F9"></i><b>#F4F8F9 фон</b></div>
+      <div class="sw"><i style="background:#FFFFFF"></i><b>#FFFFFF карточка</b></div>
+      <div class="sw"><i style="background:#172530"></i><b>#172530 текст</b></div>
+      <div class="sw"><i style="background:#63757F"></i><b>#63757F вторичный</b></div>
+      <div class="sw"><i style="background:#3E7C8C"></i><b>#3E7C8C акцент</b></div>
+      <div class="sw"><i style="background:#C7DEE3"></i><b>#C7DEE3 свет</b></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Типографика</h2>
+    <div class="typespec">
+      <p class="display">Утренние склоны, 2 300 м</p>
+      <p class="body">Manrope — единственный голос: лёгкое Light 300 в заголовках, 500 в тексте.</p>
+      <p class="muted">Unbounded — только в логотипе-слове, широкая геометрия.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Витрина (превью)</h2>
+    <div class="cards">
+      <div class="card"><div class="img"></div><div class="body"><h3>Восхождение на Эльбрус</h3><div class="price">42 000 ₽</div><div class="meta">hard · 05.07—12.07</div></div></div>
+      <div class="card"><div class="img"></div><div class="body"><h3>Трек по Безенги</h3><div class="price">28 000 ₽</div><div class="meta">extreme · 12.08—19.08</div></div></div>
+      <div class="card"><div class="img"></div><div class="body"><h3>Долина Чегема</h3><div class="price">9 500 ₽</div><div class="meta">easy · 20.06—21.06</div></div></div>
+    </div>
+    <a class="cta" href="#">Записаться →</a>
+  </div>
+</div>
+
+<script>setTimeout(function(){document.getElementById('opener').classList.add('gone')},3300)</script>
+</body>
+</html>

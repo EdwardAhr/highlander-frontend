@@ -6,6 +6,9 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { apiError } from "@/lib/errors";
 
+const inputCls =
+  "rounded-control border border-border bg-surface px-3 py-2 outline-none focus:border-accent focus:shadow-glow";
+
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
@@ -21,11 +24,7 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await register({
-        email,
-        password,
-        phone: phone || null,
-      });
+      await register({ email, password, phone: phone || null });
       router.push("/cabinet");
       router.refresh();
     } catch (err) {
@@ -37,51 +36,53 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-bold tracking-tight">Регистрация</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="font-display text-2xl font-semibold tracking-tight">
+        Регистрация
+      </h1>
+      <p className="mt-1 text-sm text-muted">
         Уже есть аккаунт?{" "}
-        <Link href="/login" className="font-medium text-zinc-900 underline">
+        <Link href="/login" className="font-medium text-accent underline underline-offset-2">
           Войти
         </Link>
       </p>
 
       <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-600">Email</span>
+          <span className="font-medium text-muted">Email</span>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            className={inputCls}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-600">Пароль</span>
+          <span className="font-medium text-muted">Пароль</span>
           <input
             type="password"
             required
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            className={inputCls}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-600">Телефон (необязательно)</span>
+          <span className="font-medium text-muted">Телефон (необязательно)</span>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            className={inputCls}
           />
         </label>
 
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="text-sm text-danger">{error}</p> : null}
 
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
+          className="rounded-control bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
         >
           {loading ? "Регистрация…" : "Создать аккаунт"}
         </button>

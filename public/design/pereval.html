@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Highlander — «Перевал» (тёмный, кинематографичный)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B1017;--surface:#141C26;--text:#E9E4D8;--muted:#8FA0AE;--accent:#E0A458;--ice:#6C8FA3;--line:#2A3644;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;overflow-x:hidden}
+.serif{font-family:'Playfair Display',serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ===== OPENER ===== */
+.opener{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .6s ease}
+.opener.gone{opacity:0;pointer-events:none}
+.fog{position:absolute;border-radius:50%;filter:blur(40px);opacity:.5}
+.fog1{width:60vw;height:40vh;background:#223043;left:-10vw;top:10vh;animation:drift1 3s ease forwards}
+.fog2{width:50vw;height:35vh;background:#1b2736;right:-8vw;bottom:8vh;animation:drift2 3s ease forwards}
+@keyframes drift1{from{transform:translateX(0)}to{transform:translateX(30vw)}}
+@keyframes drift2{from{transform:translateX(0)}to{transform:translateX(-28vw)}}
+.ridge{position:relative;width:320px;height:220px}
+.ridge svg{width:100%;height:100%}
+.ridge path{fill:none;stroke:var(--text);stroke-width:2.5;stroke-dasharray:1000;stroke-dashoffset:1000;animation:draw 2.4s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.sun{position:absolute;top:34px;right:40px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,var(--accent),transparent 70%);opacity:0;animation:glow 1s ease 1.6s forwards}
+@keyframes glow{to{opacity:1}}
+.wordmark{position:absolute;bottom:0;left:50%;transform:translateX(-50%);opacity:0;animation:fade 1s ease 2.2s forwards;display:flex;align-items:center;gap:10px}
+@keyframes fade{to{opacity:1}}
+
+/* ===== MOODBOARD ===== */
+.wrap{max-width:1060px;margin:0 auto;padding:64px 24px}
+h1{font-family:'Playfair Display',serif;font-weight:600;font-size:56px;line-height:1.05;letter-spacing:-.01em}
+h1 em{color:var(--accent);font-style:normal}
+.lead{color:var(--muted);font-size:18px;margin-top:16px;max-width:560px}
+.section{margin-top:64px}
+h2{font-family:'Playfair Display',serif;font-weight:500;font-size:26px;margin-bottom:20px}
+.swatches{display:flex;gap:12px;flex-wrap:wrap}
+.sw{width:120px}
+.sw i{display:block;height:72px;border-radius:8px;border:1px solid var(--line)}
+.sw b{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:6px}
+.typespec p{margin:8px 0}
+.typespec .display{font-family:'Playfair Display',serif;font-size:40px}
+.typespec .body{font-size:18px;color:var(--text)}
+.typespec .mono{font-size:15px;color:var(--muted)}
+
+/* ===== STOREFRONT ===== */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.card .img{height:150px;background:linear-gradient(135deg,#223043,#0f1620)}
+.card .body{padding:16px}
+.card h3{font-family:'Playfair Display',serif;font-weight:600;font-size:19px;line-height:1.2}
+.card .price{margin-top:10px;font-weight:600;color:var(--accent)}
+.card .meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px}
+.cta{display:inline-block;margin-top:28px;padding:12px 22px;background:var(--accent);color:#0B1017;border-radius:10px;font-weight:600;text-decoration:none}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="opener" id="opener">
+  <div class="fog fog1"></div><div class="fog fog2"></div>
+  <div class="ridge">
+    <svg viewBox="0 0 320 220"><path d="M20 190 L110 70 L150 120 L200 40 L300 190"/></svg>
+    <div class="sun"></div>
+    <div class="wordmark"><b style="font-family:'Playfair Display',serif;font-size:34px">Highlander</b></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Горы начинаются <em>здесь</em>.</h1>
+  <p class="lead">Направление «Перевал» — ночные горы с высоты, где свет и туман важнее деталей. Кинематографичная глубина, один тёплый акцент.</p>
+
+  <div class="section">
+    <h2>Палитра</h2>
+    <div class="swatches">
+      <div class="sw"><i style="background:#0B1017"></i><b>#0B1017 фон</b></div>
+      <div class="sw"><i style="background:#141C26"></i><b>#141C26 поверхность</b></div>
+      <div class="sw"><i style="background:#E9E4D8"></i><b>#E9E4D8 текст</b></div>
+      <div class="sw"><i style="background:#8FA0AE"></i><b>#8FA0AE туман</b></div>
+      <div class="sw"><i style="background:#E0A458"></i><b>#E0A458 акцент</b></div>
+      <div class="sw"><i style="background:#6C8FA3"></i><b>#6C8FA3 лёд</b></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Типографика</h2>
+    <div class="typespec">
+      <p class="display">Эльбрус, 5 642 м</p>
+      <p class="body">Интер — основной текст и контролы, читаемый на длинных текстах.</p>
+      <p class="mono">IBM Plex Mono — даты, цены, высоты: 05.07—12.07 · 42 000 ₽</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Витрина (превью)</h2>
+    <div class="cards">
+      <div class="card"><div class="img"></div><div class="body"><h3>Восхождение на Эльбрус</h3><div class="price">42 000 ₽</div><div class="meta">hard · 05.07—12.07</div></div></div>
+      <div class="card"><div class="img"></div><div class="body"><h3>Трек по Безенги</h3><div class="price">28 000 ₽</div><div class="meta">extreme · 12.08—19.08</div></div></div>
+      <div class="card"><div class="img"></div><div class="body"><h3>Долина Чегема</h3><div class="price">9 500 ₽</div><div class="meta">easy · 20.06—21.06</div></div></div>
+    </div>
+    <a class="cta" href="#">Записаться →</a>
+  </div>
+</div>
+
+<script>setTimeout(function(){document.getElementById('opener').classList.add('gone')},3200)</script>
+</body>
+</html>

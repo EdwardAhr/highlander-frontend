@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Highlander — спуск с Эльбруса (скролл-цвет)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prata&family=Inter:wght@400;500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E6EFF4; --surface:#F5EFE0; --text:#1C3642; --muted:#6B8592; --accent:#3E7C96; --line:#C6D8DF;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif}
+
+.hdr{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px;border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.logo{display:flex;align-items:center;gap:10px;font-family:Prata,serif;font-weight:600;font-size:18px}
+.logo svg{width:26px;height:26px}
+.hdr .right{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)}
+
+/* ===== Альтиметр (привязан к высоте Эльбруса) ===== */
+.alt{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:20;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.alt .peak{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--muted)}
+.alt .scale{position:relative;width:34px;height:260px;display:flex;justify-content:center}
+.alt .track{position:absolute;top:0;bottom:0;left:50%;width:2px;transform:translateX(-50%);background:var(--line);border-radius:2px}
+.alt .fill{position:absolute;top:0;left:50%;width:2px;transform:translateX(-50%);background:var(--accent);border-radius:2px;height:0%}
+.alt .tick{position:absolute;left:0;display:flex;align-items:center;gap:6px;transform:translateY(-50%)}
+.alt .tick i{width:10px;height:1px;background:var(--line)}
+.alt .tick span{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)}
+.alt .marker{position:absolute;left:50%;width:11px;height:11px;border-radius:50%;background:var(--accent);
+  transform:translate(-50%,-50%);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent)}
+.alt .readout{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);font-weight:500}
+.alt .base{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--muted)}
+
+.zone{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 10vw;position:relative}
+.zone .kicker{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+.zone h2{font-family:Prata,serif;font-weight:500;font-size:clamp(34px,6vw,72px);line-height:1.05;margin:16px 0 20px}
+.zone p{max-width:560px;font-size:18px;line-height:1.65;color:var(--muted)}
+
+.store{min-height:auto;padding:120px 10vw}
+.store h2{font-family:Prata,serif;font-weight:500;font-size:clamp(28px,4vw,44px);margin-bottom:8px}
+.store .lead{color:var(--muted);margin-bottom:32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.tcard .img{height:110px;border-radius:10px;background:color-mix(in srgb, var(--accent) 26%, var(--surface));margin-bottom:12px}
+.tcard h4{font-family:Prata,serif;font-size:16px;font-weight:500}
+.tcard .price{font-family:'IBM Plex Mono',monospace;margin-top:8px;color:var(--accent)}
+.tcard .meta{font-size:12px;color:var(--muted);margin-top:3px}
+
+.footer{padding:48px 10vw 60px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--line)}
+.footer .big{font-family:Prata,serif;font-size:26px}
+.footer .small{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)}
+
+.hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;
+  font-size:12px;color:var(--muted);letter-spacing:.05em;z-index:20;animation:bob 2s ease-in-out infinite;transition:opacity .4s}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,6px)}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">
+    <svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10 L27 12"/><path d="M3 20 L27 18"/><circle cx="15" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg>
+    Highlander
+  </div>
+  <div class="right">спуск с Эльбруса</div>
+</header>
+
+<div class="alt">
+  <div class="peak">ЭЛЬБРУС</div>
+  <div class="scale">
+    <div class="track"></div>
+    <div class="fill" id="fill"></div>
+    <div class="tick" style="top:0%"><i></i><span>5642</span></div>
+    <div class="tick" style="top:33.9%"><i></i><span>4000</span></div>
+    <div class="tick" style="top:75.2%"><i></i><span>2000</span></div>
+    <div class="tick" style="top:100%"><i></i><span>800</span></div>
+    <div class="marker" id="marker" style="top:0%"></div>
+  </div>
+  <div class="readout" id="readout">5642 м</div>
+  <div class="base">подножие</div>
+</div>
+
+<div class="hint" id="hint">скроль вниз ↓</div>
+
+<section class="zone">
+  <div class="kicker">Эльбрус</div>
+  <h2>5 642 м<br>над уровнем моря.</h2>
+  <p>Ты на вершине. Внизу — ледник, скалы, туман и лес. Спускайся.</p>
+</section>
+
+<section class="zone">
+  <div class="kicker">ледник</div>
+  <h2>Снег и лёд.</h2>
+  <p>Хрустящий снег, синеватый лёд, редкий воздух. Холод и белизна.</p>
+</section>
+
+<section class="zone">
+  <div class="kicker">скалы</div>
+  <h2>Камень и ветер.</h2>
+  <p>Снег отступает — обнажается скала. Серый, надёжный, вечный.</p>
+</section>
+
+<section class="zone">
+  <div class="kicker">туман</div>
+  <h2>Сырая дымка.</h2>
+  <p>Граница высот, где туман стирает линию между небом и землёй.</p>
+</section>
+
+<section class="zone">
+  <div class="kicker">хвойный лес</div>
+  <h2>Лес и хвоя.</h2>
+  <p>Тропа уходит в зелень, земля под ногами, запах смолы.</p>
+</section>
+
+<section class="zone">
+  <div class="kicker">подножие</div>
+  <h2>Тропа у камней.</h2>
+  <p>Поля, трава, ухабы, камни. Ты спустился. Путь начинается здесь.</p>
+</section>
+
+<section class="store">
+  <h2>Витрина туров</h2>
+  <p class="lead">Туры — сами по себе, не привязаны к высоте спуска.</p>
+  <div class="grid">
+    <div class="tcard"><div class="img"></div><h4>Восхождение на Эльбрус</h4><div class="price">42 000 ₽</div><div class="meta">hard · 05.07—12.07</div></div>
+    <div class="tcard"><div class="img"></div><h4>Трек по Безенги</h4><div class="price">28 000 ₽</div><div class="meta">extreme · 12.08—19.08</div></div>
+    <div class="tcard"><div class="img"></div><h4>Долина Чегема</h4><div class="price">9 500 ₽</div><div class="meta">easy · 20.06—21.06</div></div>
+    <div class="tcard"><div class="img"></div><h4>Плато Лаго-Наки</h4><div class="price">14 000 ₽</div><div class="meta">medium · 02.07—05.07</div></div>
+  </div>
+</section>
+
+<div class="footer">
+  <div class="big">Спускайся.<br>Путь — это тоже вершина.</div>
+  <div class="small">Highlander · горные туры Кавказа</div>
+</div>
+
+<script>
+const TOP = 5642, BASE = 800, SPAN = TOP - BASE;
+
+// Фон — плавный спуск (снег → скалы → туман → лес → подножие)
+const STOPS = [
+  { t:0.00, bg:[230,239,244], surface:[245,239,224], line:[198,216,223] },
+  { t:0.30, bg:[195,207,213], surface:[226,231,229], line:[168,183,190] },
+  { t:0.55, bg:[147,168,176], surface:[185,199,203], line:[126,147,155] },
+  { t:0.80, bg:[36,64,47],    surface:[46,76,54],    line:[62,90,70]    },
+  { t:1.00, bg:[14,23,19],    surface:[22,36,28],    line:[53,72,62]    },
+];
+// Передний план — контраст-безопасный: текст/акцент переключаются быстро
+const LIGHT_FG = { text:[28,54,66],   muted:[107,133,146], accent:[62,124,150] };
+const DARK_FG  = { text:[235,227,204], muted:[157,176,154], accent:[200,155,94] };
+
+function lerp(a,b,t){ return Math.round(a + (b - a) * t); }
+function hex(c){ return '#' + c.map(v => v.toString(16).padStart(2,'0')).join(''); }
+
+function bgAt(p){
+  p = Math.min(1, Math.max(0, p));
+  for(let i=0;i<STOPS.length-1;i++){
+    const a=STOPS[i], b=STOPS[i+1];
+    if(p<=b.t){ const f=(p-a.t)/(b.t-a.t); const o={};
+      ['bg','surface','line'].forEach(k=>o[k]=[lerp(a[k][0],b[k][0],f),lerp(a[k][1],b[k][1],f),lerp(a[k][2],b[k][2],f)]);
+      return o; }
+  }
+  const s=STOPS[STOPS.length-1]; return { bg:s.bg, surface:s.surface, line:s.line };
+}
+function fgAt(p){
+  const tf = Math.min(1, Math.max(0, (p - 0.60) / 0.12)); // быстрый переключ 0.60→0.72
+  const o={};
+  ['text','muted','accent'].forEach(k=>o[k]=[lerp(LIGHT_FG[k][0],DARK_FG[k][0],tf),lerp(LIGHT_FG[k][1],DARK_FG[k][1],tf),lerp(LIGHT_FG[k][2],DARK_FG[k][2],tf)]);
+  return o;
+}
+
+function update(){
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  const t = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+  const bg = bgAt(t), fg = fgAt(t);
+  const r = document.documentElement.style;
+  r.setProperty('--bg', hex(bg.bg));
+  r.setProperty('--surface', hex(bg.surface));
+  r.setProperty('--line', hex(bg.line));
+  r.setProperty('--text', hex(fg.text));
+  r.setProperty('--muted', hex(fg.muted));
+  r.setProperty('--accent', hex(fg.accent));
+
+  const alt = Math.round(TOP - t*SPAN);
+  document.getElementById('fill').style.height = (t*100)+'%';
+  document.getElementById('marker').style.top = (t*100)+'%';
+  document.getElementById('readout').textContent = alt + ' м';
+  const hint = document.getElementById('hint');
+  if(hint) hint.style.opacity = t > 0.02 ? '0' : '1';
+}
+window.addEventListener('scroll', update, { passive:true });
+update();
+</script>
+</body>
+</html>

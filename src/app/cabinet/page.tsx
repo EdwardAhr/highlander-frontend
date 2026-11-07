@@ -13,11 +13,7 @@ import {
   type CabinetBooking,
   type BookingDocuments,
 } from "@/lib/queries";
-import {
-  DIFFICULTY_LABELS,
-  formatDateWindow,
-  formatPrice,
-} from "@/lib/labels";
+import { DIFFICULTY_LABELS, formatDateWindow, formatPrice } from "@/lib/labels";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { EmptyState, ErrorState, Spinner } from "@/components/ui";
 import { apiError } from "@/lib/errors";
@@ -39,10 +35,12 @@ export default function CabinetPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Личный кабинет</h1>
-          <p className="mt-1 text-zinc-500">{user.email}</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
+            Личный кабинет
+          </h1>
+          <p className="mt-1 text-muted">{user.email}</p>
         </div>
-        <div className="flex gap-1 rounded-lg bg-zinc-100 p-1">
+        <div className="flex gap-1 rounded-control bg-fog p-1">
           {(
             [
               ["active", "Активные"],
@@ -54,7 +52,7 @@ export default function CabinetPage() {
               key={t}
               onClick={() => setTab(t)}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                tab === t ? "bg-white shadow-sm" : "text-zinc-600"
+                tab === t ? "bg-surface shadow-card" : "text-muted"
               }`}
             >
               {label}
@@ -92,10 +90,10 @@ function Summary() {
       {cards.map((c) => (
         <div
           key={c.label}
-          className="rounded-xl border border-zinc-200 bg-white p-4"
+          className="rounded-card border border-border bg-surface p-4 shadow-card"
         >
-          <div className="text-2xl font-bold">{c.value}</div>
-          <div className="text-sm text-zinc-500">{c.label}</div>
+          <div className="font-display text-2xl font-semibold">{c.value}</div>
+          <div className="text-sm text-muted">{c.label}</div>
         </div>
       ))}
     </div>
@@ -110,11 +108,13 @@ function BookingRow({
   invoice?: BookingDocuments;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
+    <div className="rounded-card border border-border bg-surface p-4 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="font-semibold">{booking.tour_title}</h3>
-          <p className="mt-1 text-xs text-zinc-500">
+          <h3 className="font-display text-lg font-semibold">
+            {booking.tour_title}
+          </h3>
+          <p className="mt-1 text-xs text-muted">
             {booking.difficulty
               ? `${DIFFICULTY_LABELS[booking.difficulty]} · `
               : ""}
@@ -128,7 +128,9 @@ function BookingRow({
       </div>
 
       <div className="mt-3 flex items-center justify-between">
-        <span className="font-bold">{formatPrice(booking.total_price)}</span>
+        <span className="font-mono font-medium">
+          {formatPrice(booking.total_price)}
+        </span>
 
         {booking.status === "confirmed" && invoice?.invoice ? (
           <PayButton invoiceId={invoice.invoice.id} />
@@ -136,7 +138,7 @@ function BookingRow({
       </div>
 
       {booking.status === "rejected" && booking.reject_reason ? (
-        <p className="mt-2 text-sm text-rose-600">
+        <p className="mt-2 text-sm text-danger">
           Причина отказа: {booking.reject_reason}
         </p>
       ) : null}
@@ -163,11 +165,11 @@ function PayButton({ invoiceId }: { invoiceId: string }) {
       <button
         onClick={() => pay.mutate()}
         disabled={pay.isPending}
-        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+        className="rounded-control bg-accent px-4 py-2 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
       >
         {pay.isPending ? "Оплата…" : "Оплатить"}
       </button>
-      {error ? <span className="text-xs text-rose-600">{error}</span> : null}
+      {error ? <span className="text-xs text-danger">{error}</span> : null}
     </div>
   );
 }
@@ -189,7 +191,12 @@ function ActiveBookings() {
   }, [docsQ.data]);
 
   if (!bookingsQ.data || bookingsQ.data.length === 0)
-    return <EmptyState title="Нет активных броней" hint="Запишитесь на тур из витрины" />;
+    return (
+      <EmptyState
+        title="Нет активных броней"
+        hint="Запишитесь на тур из витрины"
+      />
+    );
 
   return (
     <div className="flex flex-col gap-3">
@@ -208,8 +215,7 @@ function History() {
 
   if (isPending) return <Spinner />;
   if (error) return <ErrorState message={apiError(error)} />;
-  if (!data || data.length === 0)
-    return <EmptyState title="История пуста" />;
+  if (!data || data.length === 0) return <EmptyState title="История пуста" />;
 
   return (
     <div className="flex flex-col gap-3">
@@ -236,9 +242,9 @@ function Documents() {
       {data.map((d) => (
         <div
           key={d.booking_id}
-          className="rounded-xl border border-zinc-200 bg-white p-4"
+          className="rounded-card border border-border bg-surface p-4 shadow-card"
         >
-          <h3 className="font-semibold">{d.tour_title}</h3>
+          <h3 className="font-display text-lg font-semibold">{d.tour_title}</h3>
 
           <dl className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
             {d.invoice ? (
@@ -277,10 +283,10 @@ function Documents() {
 
 function DocItem({ title, lines }: { title: string; lines: string[] }) {
   return (
-    <div className="rounded-lg bg-zinc-50 p-3">
-      <div className="font-medium text-zinc-700">{title}</div>
+    <div className="rounded-control bg-fog p-3">
+      <div className="font-medium text-foreground">{title}</div>
       {lines.map((l, i) => (
-        <div key={i} className="text-zinc-500">
+        <div key={i} className="text-muted">
           {l}
         </div>
       ))}

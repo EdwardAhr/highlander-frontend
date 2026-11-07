@@ -12,17 +12,16 @@ import { ErrorState, Spinner } from "@/components/ui";
 
 type Participant = { name: string; age: string };
 
+const inputCls =
+  "rounded-control border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:shadow-glow";
+
 export default function TourPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
   const id = params.id;
 
-  const {
-    data: tour,
-    isPending,
-    error,
-  } = useQuery({
+  const { data: tour, isPending, error } = useQuery({
     queryKey: ["tour", id],
     queryFn: () => fetchTour(id),
     enabled: !!id,
@@ -52,10 +51,7 @@ export default function TourPage() {
   if (error || !tour)
     return <ErrorState message={error ? apiError(error) : "Тур не найден"} />;
 
-  const setParticipant = (
-    i: number,
-    patch: Partial<Participant>,
-  ) => {
+  const setParticipant = (i: number, patch: Partial<Participant>) => {
     setParticipants((prev) =>
       prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)),
     );
@@ -65,15 +61,14 @@ export default function TourPage() {
     <div className="flex flex-col gap-6">
       <Link
         href="/"
-        className="text-sm font-medium text-zinc-500 hover:text-zinc-900"
+        className="text-sm font-medium text-muted hover:text-foreground"
       >
         ← К витрине
       </Link>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Галерея и описание */}
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+          <div className="overflow-hidden rounded-card border border-border bg-surface shadow-card">
             {tour.photos?.length ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -82,51 +77,54 @@ export default function TourPage() {
                 className="aspect-[16/9] w-full object-cover"
               />
             ) : (
-              <div className="flex aspect-[16/9] w-full items-center justify-center text-6xl bg-zinc-100">
-                ⛰
+              <div className="flex aspect-[16/9] w-full items-center justify-center bg-fog text-muted">
+                <svg width="80" height="80" viewBox="0 0 28 28" fill="currentColor" aria-hidden>
+                  <path d="M2 22 L9 8 L13 15 L16 4 L23 18 L26 12 L26 22 Z" />
+                </svg>
               </div>
             )}
           </div>
 
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-tight">{tour.title}</h1>
+              <h1 className="font-display text-3xl font-semibold tracking-tight">
+                {tour.title}
+              </h1>
               {tour.difficulty ? (
-                <span className="rounded bg-zinc-100 px-2.5 py-1 text-sm font-medium text-zinc-600">
+                <span className="rounded-full bg-fog px-2.5 py-1 text-sm font-medium text-muted">
                   {DIFFICULTY_LABELS[tour.difficulty]}
                 </span>
               ) : null}
             </div>
 
             {tour.description ? (
-              <p className="whitespace-pre-line text-zinc-600">
-                {tour.description}
-              </p>
+              <p className="whitespace-pre-line text-muted">{tour.description}</p>
             ) : null}
 
             {tour.dates?.length ? (
-              <div className="rounded-lg bg-zinc-100 p-3 text-sm">
-                <span className="font-medium">Даты: </span>
-                {tour.dates.map((d) => formatDateWindow(d)).join(" · ")}
+              <div className="rounded-control bg-fog p-3 text-sm">
+                <span className="font-medium text-foreground">Даты: </span>
+                <span className="font-mono">
+                  {tour.dates.map((d) => formatDateWindow(d)).join(" · ")}
+                </span>
               </div>
             ) : null}
           </div>
         </div>
 
-        {/* Блок бронирования */}
-        <div className="h-fit rounded-xl border border-zinc-200 bg-white p-5">
+        <div className="h-fit rounded-card border border-border bg-surface p-5 shadow-card">
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold">{formatPrice(tour.price)}</span>
+            <span className="font-display text-2xl font-semibold">
+              {formatPrice(tour.price)}
+            </span>
             {tour.max_slots ? (
-              <span className="text-xs text-zinc-500">
-                мест: {tour.max_slots}
-              </span>
+              <span className="text-xs text-faint">мест: {tour.max_slots}</span>
             ) : null}
           </div>
 
           <div className="mt-5">
             {createdBookingId ? (
-              <div className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-800">
+              <div className="rounded-control bg-accent/10 p-4 text-sm text-accent">
                 Заявка отправлена! Статус — «Ожидает подтверждения».
                 <div className="mt-3">
                   <Link
@@ -139,12 +137,12 @@ export default function TourPage() {
               </div>
             ) : !user ? (
               <div className="flex flex-col gap-3">
-                <p className="text-sm text-zinc-600">
+                <p className="text-sm text-muted">
                   Чтобы записаться, войдите или зарегистрируйтесь.
                 </p>
                 <Link
                   href={`/login?next=/tours/${id}`}
-                  className="rounded-lg bg-zinc-900 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+                  className="rounded-control bg-accent px-4 py-2.5 text-center text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover"
                 >
                   Войти и записаться
                 </Link>
@@ -158,7 +156,7 @@ export default function TourPage() {
                   book.mutate();
                 }}
               >
-                <p className="text-sm font-medium text-zinc-700">Участники</p>
+                <p className="text-sm font-medium text-foreground">Участники</p>
 
                 {participants.map((p, i) => (
                   <div key={i} className="flex gap-2">
@@ -166,7 +164,7 @@ export default function TourPage() {
                       value={p.name}
                       onChange={(e) => setParticipant(i, { name: e.target.value })}
                       placeholder="Имя"
-                      className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                      className={`flex-1 ${inputCls}`}
                     />
                     <input
                       value={p.age}
@@ -174,7 +172,7 @@ export default function TourPage() {
                       placeholder="Возраст"
                       type="number"
                       min={0}
-                      className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                      className={`w-24 ${inputCls}`}
                     />
                   </div>
                 ))}
@@ -184,19 +182,21 @@ export default function TourPage() {
                   onClick={() =>
                     setParticipants((prev) => [...prev, { name: "", age: "" }])
                   }
-                  className="self-start text-sm font-medium text-zinc-600 hover:text-zinc-900"
+                  className="self-start text-sm font-medium text-accent hover:text-accent-hover"
                 >
                   + Добавить участника
                 </button>
 
                 {submitError ? (
-                  <p className="text-sm text-rose-600">{submitError}</p>
+                  <p className="text-sm text-danger">{submitError}</p>
                 ) : null}
 
                 <button
                   type="submit"
-                  disabled={book.isPending || !participants.some((p) => p.name.trim())}
-                  className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
+                  disabled={
+                    book.isPending || !participants.some((p) => p.name.trim())
+                  }
+                  className="rounded-control bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
                 >
                   {book.isPending ? "Отправка…" : "Записаться"}
                 </button>
