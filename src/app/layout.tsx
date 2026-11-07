@@ -1,43 +1,33 @@
-import type { Metadata } from "next";
-import {
-  Inter,
-  Playfair_Display,
-  Manrope,
-  IBM_Plex_Mono,
-  Unbounded,
-} from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Prata, Golos_Text, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { Header } from "@/components/header";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { Opener } from "@/components/opener";
 
-const inter = Inter({
+const prata = Prata({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
+  weight: "400",
+  variable: "--font-prata",
 });
-const playfair = Playfair_Display({
+const golos = Golos_Text({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-playfair",
+  variable: "--font-golos",
 });
-const manrope = Manrope({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-manrope",
-});
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500"],
-  variable: "--font-plex-mono",
-});
-const unbounded = Unbounded({
-  subsets: ["latin", "cyrillic"],
-  weight: ["500", "600"],
-  variable: "--font-unbounded",
+  variable: "--font-jetbrains-mono",
 });
 
 export const metadata: Metadata = {
   title: "Highlander — горные туры Кавказа",
   description: "Маркетплейс горных туров Северного Кавказа",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F4F8F9",
+  viewportFit: "cover",
 };
 
 // Устанавливает тему до первой отрисовки (защита от «мигания»).
@@ -48,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="ru"
       suppressHydrationWarning
-      className={`${inter.variable} ${playfair.variable} ${manrope.variable} ${plexMono.variable} ${unbounded.variable} h-full antialiased`}
+      className={`${prata.variable} ${golos.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

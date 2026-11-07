@@ -14,6 +14,12 @@ export type ThemeMode = Theme | "system";
 
 const STORAGE_KEY = "highlander-theme";
 
+/**
+ * Флаг «скролл-тема активна». На лендинге палитрой владеет ScrollTheme,
+ * поэтому ThemeProvider не должен перезаписывать data-theme.
+ */
+export const journeyActive = { current: false };
+
 function getStoredMode(): ThemeMode {
   if (typeof window === "undefined") return "system";
   const s = window.localStorage.getItem(STORAGE_KEY);
@@ -50,9 +56,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Применяем тему к <html>.
+  // Применяем тему к <html> (если скролл-тема лендинга не владеет палитрой).
   useEffect(() => {
     if (typeof document === "undefined") return;
+    if (journeyActive.current) return;
     document.documentElement.dataset.theme = resolveTheme(mode);
   }, [mode]);
 
@@ -61,6 +68,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (mode !== "system" || typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
+      if (journeyActive.current) return;
       document.documentElement.dataset.theme = mq.matches ? "dark" : "light";
     };
     mq.addEventListener("change", handler);

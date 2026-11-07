@@ -35,7 +35,7 @@ export default function CabinetPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
+          <h1 className="font-display text-2xl font-normal tracking-tight">
             Личный кабинет
           </h1>
           <p className="mt-1 text-muted">{user.email}</p>
@@ -92,7 +92,7 @@ function Summary() {
           key={c.label}
           className="rounded-card border border-border bg-surface p-4 shadow-card"
         >
-          <div className="font-display text-2xl font-semibold">{c.value}</div>
+          <div className="font-display text-2xl font-normal">{c.value}</div>
           <div className="text-sm text-muted">{c.label}</div>
         </div>
       ))}
@@ -111,7 +111,7 @@ function BookingRow({
     <div className="rounded-card border border-border bg-surface p-4 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="font-display text-lg font-semibold">
+          <h3 className="font-display text-lg font-normal">
             {booking.tour_title}
           </h3>
           <p className="mt-1 text-xs text-muted">
@@ -244,7 +244,7 @@ function Documents() {
           key={d.booking_id}
           className="rounded-card border border-border bg-surface p-4 shadow-card"
         >
-          <h3 className="font-display text-lg font-semibold">{d.tour_title}</h3>
+          <h3 className="font-display text-lg font-normal">{d.tour_title}</h3>
 
           <dl className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
             {d.invoice ? (

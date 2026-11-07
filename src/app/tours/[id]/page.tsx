@@ -87,7 +87,7 @@ export default function TourPage() {
 
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-3xl font-semibold tracking-tight">
+              <h1 className="font-display text-3xl font-normal tracking-tight">
                 {tour.title}
               </h1>
               {tour.difficulty ? (
@@ -114,7 +114,7 @@ export default function TourPage() {
 
         <div className="h-fit rounded-card border border-border bg-surface p-5 shadow-card">
           <div className="flex items-baseline justify-between">
-            <span className="font-display text-2xl font-semibold">
+            <span className="font-display text-2xl font-normal">
               {formatPrice(tour.price)}
             </span>
             {tour.max_slots ? (

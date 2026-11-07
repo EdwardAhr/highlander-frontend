@@ -36,7 +36,7 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">
+      <h1 className="font-display text-2xl font-normal tracking-tight">
         Регистрация
       </h1>
       <p className="mt-1 text-sm text-muted">

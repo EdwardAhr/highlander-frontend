@@ -79,7 +79,7 @@ function LoginForm() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">Вход</h1>
+      <h1 className="font-display text-2xl font-normal tracking-tight">Вход</h1>
       <p className="mt-1 text-sm text-muted">
         Нет аккаунта?{" "}
         <Link href="/register" className="font-medium text-accent underline underline-offset-2">

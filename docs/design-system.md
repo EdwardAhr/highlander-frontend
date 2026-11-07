@@ -3,26 +3,31 @@
 Единые конвенции дизайна и архитектуры фронтенда. Читай перед любыми визуальными
 или структурными изменениями.
 
-## Система двух тем
+## Система тем
 
-Один набор **семантических CSS-токенов**, две темы:
-- **Светлая** («Утренний воздух») — значения по умолчанию в `:root`.
-- **Тёмная** («Перевал») — переопределение в `:root[data-theme="dark"]`.
+Один набор **семантических CSS-токенов**, два источника палитры:
 
-Переключение — кнопкой в шапке. Атрибут `data-theme` на `<html>`, значение в
-`localStorage["highlander-theme"]`, по умолчанию — `prefers-color-scheme`.
-Токены описаны в `src/app/globals.css`, логика — `src/lib/theme.tsx` (`useTheme`).
+- **Маршруты приложения** (`/tours`, `/cabinet`, …) — две темы через `data-theme`:
+  светлая «Утренний воздух» (`:root`) и тёмная «Перевал» (`:root[data-theme="dark"]`).
+  Переключение — кнопкой в шапке, `localStorage["highlander-theme"]`, по умолчанию —
+  `prefers-color-scheme`. Логика — `src/lib/theme.tsx` (`useTheme`).
+
+- **Витрина `/`** — «скролл-тема» (нарратив «спуск с Эльбруса»): палитра
+  интерполируется по прогрессу скролла от светлого «воздуха» к тёмной «ели».
+  Контроллер `src/components/scroll-theme.tsx` пишет terrain-токены
+  (`--bg/--surface/--border`) инлайн и переключает `data-theme` по фазе (порог
+  яркости фона). Модель и стопы — `src/lib/journey.ts`. На витрине кнопка темы скрыта.
+
+Токены описаны в `src/app/globals.css`.
 
 ## Стек
 
 - **Next.js 16** (App Router, Turbopack), React 19, TypeScript (strict)
 - **Tailwind CSS v4** (`@theme inline` маппит токены на утилиты), TanStack Query, `openapi-fetch`
 - Шрифты (next/font/google, все с кириллицей):
-  - **Inter** — body/UI (обе темы)
-  - **Playfair Display** — display-заголовки в тёмной теме
-  - **Manrope** — display-заголовки в светлой теме
-  - **IBM Plex Mono** — цены, даты, данные
-  - **Unbounded** — логотип
+  - **Prata** — display-заголовки (единственный голос, вес 400)
+  - **Golos Text** — body/UI (по умолчанию)
+  - **JetBrains Mono** — цены, даты, высоты, данные
 
 ## Токены (утилиты Tailwind)
 
@@ -50,7 +55,7 @@
 ## Правила
 
 - Компоненты пишутся **один раз** на семантических токенах — тема меняется только через CSS-переменные.
-- Заголовки — `font-display`, цены/даты — `font-mono`, текст — Inter (по умолчанию).
+- Заголовки — `font-display` (Prata, вес 400), цены/даты/высоты — `font-mono`, текст — Golos Text (по умолчанию).
 - Примитивы — в `src/components/ui.tsx`; конкретные компоненты — в `src/components/`; страницы — в `src/app/`.
 - Типы бери из `src/lib/api/schema.d.ts` (генерируются из `docs/openapi.json`).
 - Состояния интерфейса обязательны: loading (`Spinner`), пусто (`EmptyState`), ошибка (`ErrorState` + `apiError()`).
