@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Highlander — маркетплейс горных туров</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prata&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7FAFC; --surface:#FFFFFF; --text:#16232D; --muted:#556875; --accent:#2C6E8F; --line:#D6E3EA;
+  --accent-contrast:#FFFFFF;
+  /* Система кривых (премиум-моушн): 4 токена, overshoot ≤2%, иначе — «резинка» */
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-expo:cubic-bezier(.16,1,.3,1);
+  --ease-in:cubic-bezier(.55,0,1,.45);
+  --ease-pop:cubic-bezier(.2,.85,.25,1.04);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+/* Тема идёт ровно со скроллом (JS-интерполяция 1:1, без CSS-переходов —
+   иначе цвет отстаёт от пальца и фликерит на смене фаз) */
+body{background:var(--bg);color:var(--text);font-family:'Golos Text',sans-serif}
+
+/* ===== Шапка ===== */
+/* Зона-«приманка» сверху: наведение на неё плавно показывает шапку */
+.top-grip{position:fixed;top:0;left:0;right:0;height:18px;z-index:32}
+/* Шапка: асимметрия «вход длиннее выхода» — дорогой приём. Только transform */
+.hdr{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;flex-wrap:wrap;
+  gap:clamp(8px,1.4vw,16px);padding:clamp(10px,1.3vw,14px) clamp(14px,3vw,32px);
+  border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  transform:translateY(-100%);
+  transition:transform .24s var(--ease-in)}
+.hdr.visible{transform:translateY(0);
+  transition:transform .48s var(--ease-out)}
+.logo{display:flex;align-items:center;gap:10px;font-family:Prata,serif;font-weight:400;font-size:clamp(16px,1.6vw,20px);letter-spacing:.01em;text-decoration:none;color:var(--text);cursor:pointer;white-space:nowrap}
+.logo svg{width:clamp(40px,3.6vw,50px);height:clamp(20px,1.8vw,25px);color:var(--text);flex:none;
+  transition:transform .4s var(--ease-out)}
+/* Скала: утолщённый контур + вертикальный градиент, привязанный к теме —
+   верх скалистый (от --text), основание зеленеет (от --accent) */
+.logo .rgTop{stop-color:color-mix(in srgb, var(--text) 86%, #8A7B66)}
+.logo .rgBase{stop-color:color-mix(in srgb, var(--accent) 48%, var(--text))}
+.logo .rock-outline{fill:none;stroke:var(--text);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.logo .snow{fill:#fff;stroke:var(--bg);stroke-width:.5;transition:transform .42s var(--ease-out),opacity .42s ease}
+.logo:hover svg{transform:scale(1.03);transition-duration:.28s}
+.logo:hover svg .snow{transform:translateY(2px);opacity:.85}
+.logo b{font-weight:400}
+.logo b i{font-style:normal;color:var(--accent)}
+
+
+
+/* ===== Поиск: кнопка-лупа раскрывает inline-строку («круг → пилюля») ===== */
+/* Открытие 440ms ease-expo / закрытие 260ms ease-in; соседи шапки не reflow-ятся */
+.search-wrap{position:relative;display:flex;align-items:center;margin-left:auto;min-width:0;flex:0 1 auto}
+.search-toggle{position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;flex:none;
+  border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);cursor:pointer;z-index:2;
+  transition:color .18s var(--ease-out),border-color .18s ease,box-shadow .18s var(--ease-out),scale .12s var(--ease-pop)}
+.search-toggle:hover{color:var(--accent);border-color:color-mix(in srgb, var(--accent) 50%, var(--line));box-shadow:0 6px 18px rgb(4 16 10 / .10)}
+.search-toggle:active{scale:.97}
+.search-toggle svg{position:absolute;inset:0;margin:auto;width:18px;height:18px;
+  transition:opacity .16s var(--ease-out),transform .16s var(--ease-out)}
+.search-toggle .ic-close{opacity:0;transform:rotate(20deg) scale(.7)}
+/* Раскрыто: лупа гаснет, крестик вылетает из под неё (поп-кривая, +60ms) */
+.search-wrap.open .ic-search{opacity:0;transform:rotate(-20deg) scale(.6)}
+.search-wrap.open .ic-close{opacity:1;transform:none;transition:opacity .18s var(--ease-out) .06s,transform .18s var(--ease-pop) .06s}
+/* Поле — оверлей в свободной зоне слева от кнопки: wipe через clip-path на GPU,
+   никаких layout-подёргиваний соседей. Открытие 520ms (мягкий ease-out), закрытие 260ms */
+/* Поле — оверлей в свободной зоне слева от кнопки: wipe через clip-path на GPU.
+   Закрытие — зеркало открытия: та же длительность 520ms, кривая отражена (0.32,0 / 0.67,1) */
+/* Поле раскрывает JS-твин (wipe по clip-path), не CSS-переход:
+   в целевом браузере снятие-класса transition'ы не запускаются */
+.search-field{position:absolute;right:calc(100% + 10px);top:50%;translate:0 -50%;z-index:1;
+  width:clamp(220px,28vw,360px);
+  clip-path:inset(-6px 100% -6px 0 round 999px);opacity:0;pointer-events:none}
+.search-field input{width:100%;border:1px solid var(--line);border-radius:999px;padding:9px 16px;
+  background:var(--surface);font-family:inherit;font-size:14px;color:var(--text);outline:none;caret-color:var(--accent);
+  transition:border-color .18s ease,box-shadow .26s var(--ease-out)}
+.search-field input::placeholder{color:var(--muted);opacity:0;transition:opacity .24s ease .12s}
+.search-wrap.open .search-field input::placeholder{opacity:1}
+.search-field input:focus{border-color:color-mix(in srgb, var(--accent) 50%, var(--line));box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)}
+@media (max-width:680px){ .search-field{width:min(52vw,320px)} }
+
+.nav{display:flex;align-items:center;gap:4px}
+.nav a{color:var(--text);text-decoration:none;font-size:clamp(13px,1.2vw,14px);font-weight:500;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.nav .count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.auth{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.auth .login{font-size:clamp(13px,1.2vw,14px);font-weight:500;color:var(--text);text-decoration:none;padding:8px 14px;cursor:pointer}
+
+/* ===== Единая система hover (жест зависит от роли элемента) ===== */
+/* 3. Текстовые ссылки: подчёркивание акцентом, растёт слева.
+   Асимметрия: ответ быстрый, отпуск медленный */
+.nav a,.auth .login,.auth .reg,.auth .out,.modal .switch a{background:linear-gradient(var(--accent),var(--accent)) left bottom/0% 1px no-repeat;
+  transition:color .16s ease,background-size .34s var(--ease-out),scale .12s var(--ease-pop)}
+.nav a:hover,.auth .login:hover,.auth .reg:hover,.auth .out:hover,.modal .switch a:hover{color:var(--accent);background-size:100% 1px;
+  transition-duration:.16s,.16s}
+/* 1. Все действия шапки — единая фактура «текстовой ссылки».
+   Регистрация отличается только акцентным цветом и весом (иерархия без заливки) */
+.auth .reg{font-size:clamp(13px,1.2vw,14px);font-weight:600;color:var(--accent);text-decoration:none;padding:8px 14px;cursor:pointer}
+.auth .reg:active,.auth .out:active{scale:.97}
+.auth .user{display:flex;align-items:center;gap:8px}
+.auth .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-contrast);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none}
+.auth .mail{font-size:13px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auth .out{font-size:13px;font-weight:500;color:var(--text);background:none;border:none;text-decoration:none;padding:7px 12px;cursor:pointer}
+
+/* При сильном зуме/узком экране прячем второстепенное, чтобы шапка не плыла */
+@media (max-width:680px){
+  .nav .count{display:none}
+  .auth .login{display:none}
+  .auth .mail{max-width:80px}
+}
+
+/* ===== Модалка ===== */
+/* 3 акта: оверлей затемняется (blur — без transition, дёшево по GPU),
+   карточка всплывает (expo), поля входят каскадом. Уход — быстрый ease-in */
+.overlay{position:fixed;inset:0;z-index:50;background:rgb(0 0 0 / .4);display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .18s var(--ease-in),visibility 0s .18s}
+.overlay.open{opacity:1;visibility:visible;pointer-events:auto;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  transition:opacity .2s var(--ease-out),visibility 0s}
+.modal{width:100%;max-width:min(380px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 24px 60px rgb(0 0 0 / .25);
+  opacity:0;transform:translateY(14px) scale(.97);
+  transition:transform .18s var(--ease-in),opacity .18s var(--ease-in),height .32s var(--ease-out)}
+.overlay.open .modal{opacity:1;transform:translateY(0) scale(1);
+  transition:transform .46s var(--ease-expo),opacity .3s var(--ease-out),height .32s var(--ease-out)}
+/* Акт 3: поля входят каскадом при открытии; при закрытии — быстро и без задержек */
+.modal>*:not(.close){opacity:0;transform:translateY(6px);transition:opacity .18s var(--ease-in),transform .18s var(--ease-in)}
+.overlay.open .modal>*:not(.close){opacity:1;transform:none;transition:opacity .32s var(--ease-out),transform .32s var(--ease-out)}
+.overlay.open .modal>*:nth-child(2){transition-delay:.14s}
+.overlay.open .modal>*:nth-child(3){transition-delay:.18s}
+.overlay.open .modal>*:nth-child(4){transition-delay:.22s}
+.overlay.open .modal>*:nth-child(5){transition-delay:.26s}
+.overlay.open .modal>*:nth-child(6){transition-delay:.30s}
+.overlay.open .modal>*:nth-child(7){transition-delay:.34s}
+.overlay.open .modal>*:nth-child(8){transition-delay:.38s}
+.overlay.open .modal>*:nth-child(9){transition-delay:.42s}
+/* Своп Вход ⇄ Регистрация: текущее уходит вверх без задержек, модалка «дышит» высотой */
+.modal.swapping{overflow:hidden}
+.overlay.open .modal.swapping>*:not(.close){transition-delay:0s;opacity:0;transform:translateY(-6px)}
+.modal h3{font-family:Prata,serif;font-weight:400;font-size:22px;margin-bottom:4px}
+.modal .sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.modal label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+.modal input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;color:var(--text);outline:none}
+.modal input:focus{border-color:var(--accent)}
+.modal .btn{width:100%;margin-top:18px;padding:11px;border:none;border-radius:10px;background:var(--accent);color:var(--accent-contrast);font-size:14px;font-weight:600;cursor:pointer;
+  transition:box-shadow .18s var(--ease-out),background .25s ease,scale .12s var(--ease-pop)}
+.modal .btn:hover{box-shadow:0 8px 20px -6px rgb(4 16 10 / .35)}
+.modal .btn:active{scale:.97}
+.modal .btn:focus-visible{box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 24%, transparent)}
+.modal .switch{margin-top:14px;text-align:center;font-size:13px;color:var(--muted)}
+.modal .switch a{color:var(--accent);cursor:pointer;text-decoration:none}
+.modal .close{position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer}
+
+/* ===== Одна тонкая полоска справа ===== */
+.rail{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:30;width:48px;height:24vh;min-height:120px;max-height:220px;cursor:grab;touch-action:none;display:flex;flex-direction:column;align-items:center;gap:10px}
+.rail:active{cursor:grabbing}
+.rail .num{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.02em;white-space:nowrap}
+.rail .track{position:relative;width:4px;flex:1;background:var(--line);border-radius:999px;overflow:hidden}
+.rail .fill{position:absolute;top:0;left:0;width:100%;background:var(--accent);border-radius:999px;height:0%}
+
+/* ===== Секции ===== */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:clamp(16px,4vw,48px) clamp(16px,6vw,10vw);position:relative}
+/* Hero-опенер «разряженный воздух»: кадр 80ms пустой, затем срезы-масски, без fade на заголовках */
+.hero .kicker{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);letter-spacing:.14em;text-transform:uppercase}
+.hero h1{font-family:Prata,serif;font-weight:400;font-size:clamp(40px,7vw,88px);line-height:1.02;margin:18px 0 20px}
+.hero p{max-width:520px;font-size:18px;line-height:1.6;color:var(--muted)}
+/* Hero-опенер «разряженный воздух» — вешаем анимацию только если движение разрешено,
+   иначе текст виден сразу */
+@media (prefers-reduced-motion:no-preference){
+.hero .kicker{animation:mask-r .6s var(--ease-expo) .08s both}
+.hero h1{animation:mask-up .9s var(--ease-expo) .22s both}
+.hero p{animation:air .8s var(--ease-out) .52s both}
+}
+@keyframes mask-r{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes mask-up{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes air{from{opacity:0;transform:translateY(14px);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
+/* Тот же жест для заголовков секций при входе в viewport (класс .rv ставит JS) */
+.rv{clip-path:inset(0 0 100% 0);transition:clip-path .85s var(--ease-expo)}
+.rv.in-view{clip-path:inset(0 0 0 0)}
+
+.sect{padding:clamp(64px,9vw,110px) clamp(16px,6vw,10vw);position:relative}
+/* Секцию туров прижимаем к краям, чтобы карусель жила ближе к бортам лендинга */
+/* Секцию туров прижимаем к краям, но справа резервируем место под полоску-высотомер */
+#tours{padding-left:clamp(14px,2vw,3vw); padding-right:calc(clamp(14px,2vw,3vw) + 64px)}
+.sect h2{font-family:Prata,serif;font-weight:400;font-size:clamp(28px,4.4vw,46px);margin-bottom:10px}
+.sect .lead{color:var(--muted);margin-bottom:36px;max-width:560px}
+
+/* ===== Витрина: карусель-«спуск» (фокус + срезы соседей) ===== */
+.car{opacity:0;translate:0 18px;transition:opacity .46s var(--ease-out),translate .46s var(--ease-out)}
+.car.in-view{opacity:1;translate:0 0}
+.car-vp{position:relative;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.car-vp:active{cursor:grabbing}
+.car-track{position:relative;display:flex;align-items:center;will-change:transform}
+.slide{flex:0 0 var(--wc,560px);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;
+  box-shadow:0 1px 2px rgb(4 16 10/.08);transition:border-color .28s var(--ease-out)}
+.slide:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.slide .ph{position:relative;aspect-ratio:16/9;overflow:hidden;background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.slide .ph img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-drag:none;transition:scale .64s var(--ease-out)}
+.slide:hover .ph img{scale:1.06}
+/* «Окно поезда»: фото дрейфует со скроллом (translate — отдельное свойство, не конфликтует с transform карусели) */
+@media (prefers-reduced-motion:no-preference){
+  @supports (animation-timeline:view()){
+    .slide .ph img{animation:drift linear;animation-timeline:view();animation-range:entry 0% exit 100%}
+  }
+}
+@keyframes drift{from{translate:0 -5%}to{translate:0 5%}}
+.slide .chip{position:absolute;left:12px;top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.02em;
+  color:#F4F8F4;background:rgb(6 18 13/.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  padding:4px 10px;border-radius:999px;border:1px solid rgb(255 255 255/.14)}
+.slide .veil{position:absolute;inset:0;background:rgb(5 20 15/.55);pointer-events:none;opacity:0}
+.slide .body{padding:18px}
+.slide h3{font-family:Prata,serif;font-weight:400;font-size:19px;line-height:1.15;margin:0 0 5px}
+.slide .meta{font-size:13px;color:var(--muted);margin-bottom:12px}
+.slide .row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.slide .price{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--text);white-space:nowrap}
+.slide .price small{font-size:12px;color:var(--muted);font-weight:400}
+.slide .cta{font-size:13px;font-weight:500;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  background:linear-gradient(var(--accent),var(--accent)) left bottom/0% 1px no-repeat;transition:color .16s ease,background-size .34s var(--ease-out)}
+.slide .cta:hover{background-size:100% 1px}
+.slide .cta svg{width:14px;height:14px;transition:translate .2s var(--ease-out)}
+.slide .cta:hover svg{translate:3px 0}
+/* бар: счётчик · гребень · стрелки */
+.car-bar{display:flex;align-items:center;gap:18px;margin-top:26px}
+.car-count{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);white-space:nowrap}
+.car-count span{color:var(--muted)}
+.ridge{position:relative;flex:1;height:36px}
+.ridge svg{position:absolute;inset:0;width:100%;height:100%}
+.ridge .line{fill:none;stroke:var(--line);stroke-width:1}
+.ridge .fill{fill:none;stroke:var(--accent);stroke-width:1.4;stroke-linecap:round}
+.ridge-node{position:absolute;bottom:0;width:24px;height:36px;transform:translateX(-50%);background:none;border:none;cursor:pointer;padding:0}
+.ridge-node .dot{position:absolute;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--line);
+  transition:background .28s var(--ease-out),width .28s var(--ease-out),height .28s var(--ease-out)}
+.ridge-node.on .dot{background:var(--accent);width:8px;height:8px}
+.car-arrows{display:flex;gap:8px}
+.car-arrows button{width:40px;height:40px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:border-color .18s ease,color .18s ease,scale .12s var(--ease-pop)}
+.car-arrows button:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));color:var(--accent)}
+.car-arrows button:active{scale:.96}
+.car-arrows button:disabled{opacity:.28;cursor:default}
+.car-arrows button:disabled:hover{border-color:var(--line);color:var(--text)}
+.car-arrows svg{width:18px;height:18px}
+.car-empty{display:none;padding:56px 24px;text-align:center}
+.car-empty.show{display:block}
+.car-empty h3{font-family:Prata,serif;font-weight:400;font-size:20px;margin-bottom:8px}
+.car-empty p{font-size:14px;color:var(--muted);margin-bottom:16px}
+.car-empty a{color:var(--accent);cursor:pointer;text-decoration:underline}
+@media (max-width:768px){ .car-arrows{display:none} .slide .body{padding:16px} .slide h3{font-size:18px} }
+
+.footer{padding:80px 10vw;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.footer .big{font-family:Prata,serif;font-size:28px}
+.footer .small{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)}
+
+.hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;pointer-events:none;
+  font-size:12px;color:var(--muted);z-index:30;transition:opacity .4s}
+
+/* 7. Видимый фокус для всех интерактивных элементов — контур в цвете текущей темы */
+:where(a,button,input,.card,.rail):focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+/* На тач-устройствах hover нет: шапка всегда видима, зона-приманка выключена */
+@media (hover:none){
+  .hdr{transform:none!important;opacity:1!important}
+  .top-grip{display:none}
+}
+
+/* Доступность: отключаем анимации для тех, кто их просил */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+  .car{opacity:1;translate:0 0}
+  .rv{clip-path:none}
+}
+</style>
+</head>
+<body>
+
+<div class="top-grip" id="topGrip"></div>
+
+<header class="hdr visible" id="hdr">
+  <a href="#" class="logo" onclick="return goHome(event)">
+    <svg viewBox="0 0 48 24" fill="currentColor" aria-hidden>
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop class="rgTop" offset="0"/>
+          <stop class="rgBase" offset="1"/>
+        </linearGradient>
+      </defs>
+      <path class="rock-outline" d="M1.0 18.4 Q2.4 18.0 3.5 17.4 Q4.6 16.8 7.8 14.3 Q11.1 11.7 12.9 9.3 Q14.7 6.8 15.2 6.3 Q15.7 5.9 16.3 5.8 Q16.8 5.8 17.6 6.2 Q18.3 6.5 19.1 7.3 Q20.0 8.0 21.1 9.3 Q22.2 10.5 22.9 10.8 Q23.6 11.1 25.3 10.1 Q26.9 9.2 29.8 5.9 Q32.6 2.6 33.7 2.0 Q34.8 1.4 35.8 1.8 Q36.9 2.1 39.1 3.7 Q41.3 5.3 43.3 7.3 Q45.2 9.4 46.1 9.8 L47.0 10.2 L47 24 L1 24 Z"/>
+      <path class="rock" d="M1.0 18.4 Q2.4 18.0 3.5 17.4 Q4.6 16.8 7.8 14.3 Q11.1 11.7 12.9 9.3 Q14.7 6.8 15.2 6.3 Q15.7 5.9 16.3 5.8 Q16.8 5.8 17.6 6.2 Q18.3 6.5 19.1 7.3 Q20.0 8.0 21.1 9.3 Q22.2 10.5 22.9 10.8 Q23.6 11.1 25.3 10.1 Q26.9 9.2 29.8 5.9 Q32.6 2.6 33.7 2.0 Q34.8 1.4 35.8 1.8 Q36.9 2.1 39.1 3.7 Q41.3 5.3 43.3 7.3 Q45.2 9.4 46.1 9.8 L47.0 10.2 L47 24 L1 24 Z" fill="url(#logoGrad)"/>
+      <path class="snow" d="M11.1 11.7 L14.7 6.8 L15.7 5.9 L16.8 5.8 L18.3 6.5 L20 8 L22.2 10.5 L22.2 12.4 L20 11.1 L18.3 8.4 L16.8 8.9 L15.7 7.8 L14.7 9.9 L11.1 13.6 Z"/>
+      <path class="snow" d="M26.9 9.2 L32.6 2.6 L34.8 1.4 L36.9 2.1 L41.3 5.3 L45.2 9.4 L45.2 12.5 L41.3 7.2 L36.9 5.2 L34.8 3.3 L32.6 5.7 L26.9 11.1 Z"/>
+    </svg>
+    <b>High<i>lander</i></b>
+  </a>
+  <div class="search-wrap" id="searchWrap">
+    <button class="search-toggle" id="searchToggle" aria-label="Поиск" aria-expanded="false">
+      <svg class="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div class="search-field" id="searchField">
+      <input id="search" placeholder="Гора, маршрут, регион…" autocomplete="off" />
+    </div>
+  </div>
+  <nav class="nav">
+    <a href="#tours">Туры <span class="count" id="tourCount">6</span></a>
+    <a href="#" id="cabinetLink" onclick="return openCabinet(event)">Кабинет</a>
+  </nav>
+  <div class="auth" id="authArea">
+    <a href="#" class="login" onclick="return openAuth(event,'login')">Войти</a>
+    <a href="#" class="reg" onclick="return openAuth(event,'register')">Регистрация</a>
+  </div>
+</header>
+
+<div class="rail" id="rail">
+  <div class="num" id="num">5 642</div>
+  <div class="track"><div class="fill" id="fill"></div></div>
+</div>
+
+<div class="hint" id="hint">скроль вниз · или тяни полоску справа</div>
+
+
+
+<!-- Модалка авторизации -->
+<div class="overlay" id="overlay">
+  <div class="modal" style="position:relative">
+    <button class="close" onclick="closeModal()">×</button>
+    <h3 id="modalTitle">Вход</h3>
+    <p class="sub" id="modalSub">Войдите, чтобы открыть личный кабинет.</p>
+    <label>Email</label>
+    <input type="email" id="authEmail" placeholder="you@example.com" />
+    <label id="pwLabel">Пароль</label>
+    <input type="password" id="authPass" placeholder="••••••••" />
+    <button class="btn" id="authBtn" onclick="doAuth()">Войти</button>
+    <div class="switch" id="authSwitch">Нет аккаунта? <a onclick="setMode('register')">Зарегистрироваться</a></div>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="kicker">43°21′ N · 42°27′ E — 5 642 м</div>
+  <h1>Эльбрус.</h1>
+  <p>От снежной шапки 5 642 м — вниз, к зелёным лесам. Выбирай маршрут, видно куда едёшь.</p>
+</section>
+
+<section class="sect" id="tours">
+  <h2>Туры</h2>
+  <p class="lead" id="lead">Проверенные гиды, страховка, регистрация в МЧС. Цена сразу.</p>
+  <div class="car" id="car">
+    <div class="car-vp" id="carVp" tabindex="0" role="region" aria-roledescription="карусель" aria-label="Туры">
+      <div class="car-track" id="carTrack">
+        <article class="slide" role="group" aria-roledescription="слайд" data-alt="5642" data-title="Восхождение на Эльбрус">
+          <div class="ph"><img src="/images/elbrus.jpg" alt="Эльбрус" draggable="false"><div class="chip">5 642 м</div><div class="veil"></div></div>
+          <div class="body"><h3>Восхождение на Эльбрус</h3><div class="meta">8 дней · сложный</div><div class="row"><div class="price"><small>от </small>42 000 <small>₽/чел</small></div><a class="cta" href="#" onclick="return false">Смотреть <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></a></div></div>
+        </article>
+        <article class="slide" role="group" aria-roledescription="слайд" data-alt="5204" data-title="Безенгийская стена">
+          <div class="ph"><img src="/images/bezengi.jpg" alt="Безенгийская стена" draggable="false"><div class="chip">5 204 м</div><div class="veil"></div></div>
+          <div class="body"><h3>Безенгийская стена</h3><div class="meta">10 дней · экстремальный</div><div class="row"><div class="price"><small>от </small>38 000 <small>₽/чел</small></div><a class="cta" href="#" onclick="return false">Смотреть <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></a></div></div>
+        </article>
+        <article class="slide" role="group" aria-roledescription="слайд" data-alt="3800" data-title="Канатка на Эльбрус">
+          <div class="ph"><img src="/images/cablecar.jpg" alt="Канатная дорога" draggable="false"><div class="chip">3 800 м</div><div class="veil"></div></div>
+          <div class="body"><h3>Канатка на Эльбрус</h3><div class="meta">1 день · лёгкий</div><div class="row"><div class="price"><small>от </small>9 000 <small>₽/чел</small></div><a class="cta" href="#" onclick="return false">Смотреть <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></a></div></div>
+        </article>
+        <article class="slide" role="group" aria-roledescription="слайд" data-alt="1900" data-title="Чегемские водопады">
+          <div class="ph"><img src="/images/chegem.jpg" alt="Чегемские водопады" draggable="false"><div class="chip">1 900 м</div><div class="veil"></div></div>
+          <div class="body"><h3>Чегемские водопады</h3><div class="meta">1 день · лёгкий</div><div class="row"><div class="price"><small>от </small>6 000 <small>₽/чел</small></div><a class="cta" href="#" onclick="return false">Смотреть <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></a></div></div>
+        </article>
+        <article class="slide" role="group" aria-roledescription="слайд" data-alt="1400" data-title="Долина Нарзанов">
+          <div class="ph"><img src="/images/narzan.jpg" alt="Долина Нарзанов" draggable="false"><div class="chip">1 400 м</div><div class="veil"></div></div>
+          <div class="body"><h3>Долина Нарзанов</h3><div class="meta">2 дня · средний</div><div class="row"><div class="price"><small>от </small>8 500 <small>₽/чел</small></div><a class="cta" href="#" onclick="return false">Смотреть <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></a></div></div>
+        </article>
+        <article class="slide" role="group" aria-roledescription="слайд" data-alt="809" data-title="Голубые озёра">
+          <div class="ph"><img src="/images/lakes.jpg" alt="Голубые озёра" draggable="false"><div class="chip">809 м</div><div class="veil"></div></div>
+          <div class="body"><h3>Голубые озёра</h3><div class="meta">1 день · лёгкий</div><div class="row"><div class="price"><small>от </small>5 500 <small>₽/чел</small></div><a class="cta" href="#" onclick="return false">Смотреть <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></a></div></div>
+        </article>
+      </div>
+      <div class="car-empty" id="carEmpty"><h3>Ничего не нашлось</h3><p id="carEmptyText"></p><a onclick="resetSearch()">Сбросить поиск</a></div>
+    </div>
+    <div class="car-bar">
+      <div class="car-count" id="carCount">01 <span>/ 06</span></div>
+      <div class="ridge" id="ridge"></div>
+      <div class="car-arrows">
+        <button id="carPrev" aria-label="Предыдущий тур"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button id="carNext" aria-label="Следующий тур"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sect">
+  <h2>Спуск продолжается.</h2>
+  <p class="lead">Ниже — хвойный лес, тропы и подножие. Цвет страницы идёт вместе с тобой.</p>
+</section>
+
+<div class="footer">
+  <div class="big">Спускайся.<br>Путь — это тоже вершина.</div>
+  <div class="small">Highlander · горные туры Кавказа</div>
+</div>
+
+<script>
+const TOP=5642, BASE=0, SPAN=TOP-BASE;
+
+const STOPS=[
+  {t:0.00,bg:[247,250,252],surface:[255,255,255],line:[214,227,234]},
+  {t:0.46,bg:[247,250,252],surface:[255,255,255],line:[214,227,234]},
+  // «Изумруд + золото»: зона туров теперь сразу глубокая ночная ель (≈ бывшие 0.78),
+  // к подножию почти чернеет; золото-кора акценты
+  {t:0.50,bg:[11,45,35],  surface:[19,70,56],  line:[38,82,65]},
+  {t:0.80,bg:[7,28,21],   surface:[13,45,35],  line:[25,60,47]},
+  {t:1.00,bg:[4,18,13],   surface:[9,30,23],   line:[17,44,33]},
+];
+const LIGHT_FG={text:[22,35,45],muted:[55,75,89],accent:[44,110,143],contrast:[255,255,255]};
+const DARK_FG ={text:[242,247,240],muted:[169,196,175],accent:[232,184,75],contrast:[42,31,10]};
+
+const lerp=(a,b,t)=>Math.round(a+(b-a)*t);
+const hex=c=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join('');
+
+function bgAt(p){
+  p=Math.min(1,Math.max(0,p));
+  for(let i=0;i<STOPS.length-1;i++){const a=STOPS[i],b=STOPS[i+1];
+    if(p<=b.t){const f=(p-a.t)/(b.t-a.t),o={};
+      ['bg','surface','line'].forEach(k=>o[k]=[lerp(a[k][0],b[k][0],f),lerp(a[k][1],b[k][1],f),lerp(a[k][2],b[k][2],f)]);
+      return o;}}
+  const s=STOPS[STOPS.length-1];return{bg:s.bg,surface:s.surface,line:s.line};
+}
+function fgAt(p){
+  // Порог — по яркости ФОНА (на нём лежит основной текст), не surface:
+  // иначе в зоне туров заголовок падал до 2.0:1. Переключатель сидит
+  // в узком кроссе 0.46→0.50 — обе палитры там читаемы.
+  const s=bgAt(p).bg.map(v=>v/255).map(v=>v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4));
+  const l=0.2126*s[0]+0.7152*s[1]+0.0722*s[2];
+  return l>0.155?LIGHT_FG:DARK_FG;
+}
+
+const r=document.documentElement.style;
+// Кэш ссылок: не ищем DOM-узлы в каждом кадре скролла
+const numEl=document.getElementById('num'),fillEl=document.getElementById('fill'),hintEl=document.getElementById('hint');
+const heroK=document.querySelector('.hero .kicker'),heroH1=document.querySelector('.hero h1'),heroP=document.querySelector('.hero p');
+function apply(t){
+  const bg=bgAt(t),fg=fgAt(t);
+  r.setProperty('--bg',hex(bg.bg));
+  r.setProperty('--surface',hex(bg.surface));
+  r.setProperty('--line',hex(bg.line));
+  r.setProperty('--text',hex(fg.text));
+  r.setProperty('--muted',hex(fg.muted));
+  r.setProperty('--accent',hex(fg.accent));
+  r.setProperty('--accent-contrast',hex(fg.contrast));
+  const alt=Math.round(TOP-t*SPAN);
+  numEl.textContent=alt.toLocaleString('ru-RU');
+  fillEl.style.height=(t*100)+'%';
+  if(hintEl)hintEl.style.opacity=t>0.02?'0':'1';
+  // Hero-параллакс: вершина уходит на 15% медленнее пальца и тает (только если движение разрешено)
+  if(!reduceMotion){
+    const y=window.scrollY;
+    heroH1.style.transform='translateY('+(y*0.15).toFixed(1)+'px)';
+    heroH1.style.opacity=Math.max(0,1-y/600);
+  }
+}
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function progress(){const max=document.documentElement.scrollHeight-window.innerHeight;return max>0?Math.min(1,Math.max(0,window.scrollY/max)):0;}
+// Один батченный слушатель (setTimeout-троттлинг 16ms — надёжнее rAF, работает везде):
+// тема + раскрытие контента + шапка в одном кадре
+let scrollPending=false;
+function frameStep(){
+  scrollPending=false;
+  apply(progress());
+  revealStep();
+  scrolled=window.scrollY>140;
+  if(!scrolled) showHdr();
+  else if(!hdr.matches(':hover') && !grip.matches(':hover')) hideHdr();
+}
+window.addEventListener('scroll',()=>{ if(!scrollPending){scrollPending=true;setTimeout(frameStep,16);} },{passive:true});
+window.addEventListener('resize',()=>{ if(!scrollPending){scrollPending=true;setTimeout(frameStep,16);} },{passive:true});
+
+// Перетаскивание полоски
+const rail=document.getElementById('rail');
+let dragging=false;
+rail.addEventListener('pointerdown',e=>{dragging=true;rail.setPointerCapture(e.pointerId);jump(e);});
+rail.addEventListener('pointermove',e=>{if(dragging)jump(e);});
+rail.addEventListener('pointerup',()=>{dragging=false;});
+rail.addEventListener('pointercancel',()=>{dragging=false;});
+function jump(e){
+  const max=document.documentElement.scrollHeight-window.innerHeight;
+  const rect=rail.getBoundingClientRect();
+  const y=Math.min(1,Math.max(0,(e.clientY-rect.top)/rect.height));
+  // Была «резина»: каждый pointermove запускал smooth-scroll. Только мгновенный.
+  window.scrollTo({top:y*max,behavior:'instant'});
+}
+
+// ===== Логика шапки =====
+function goHome(e){ e.preventDefault(); window.scrollTo({top:0,behavior:'smooth'}); return false; }
+
+// Плавное появление шапки: при наведении на верхнюю зону или саму шапку,
+// а также когда страница наверху. Внизу — прячется, освобождая место.
+const hdr=document.getElementById('hdr');
+const grip=document.getElementById('topGrip');
+let hideTimer=null, scrolled=false;
+function showHdr(){ if(hideTimer){clearTimeout(hideTimer);hideTimer=null;} hdr.classList.add('visible'); }
+function hideHdr(){ hdr.classList.remove('visible'); }
+function scheduleHide(){
+  // Не прячем шапку, если в ней фокус, открыт поиск или модалка
+  if(hdr.contains(document.activeElement)||searchWrap.classList.contains('open')||overlay.classList.contains('open'))return;
+  if(hideTimer)clearTimeout(hideTimer); hideTimer=setTimeout(hideHdr,180);
+}
+grip.addEventListener('mouseenter',showHdr);
+grip.addEventListener('mouseleave',()=>{ if(scrolled) scheduleHide(); });
+hdr.addEventListener('mouseenter',showHdr);
+hdr.addEventListener('mouseleave',()=>{ if(scrolled) scheduleHide(); });
+// Скролл-логика шапки слита с основным rAF-слушателем темы (выше) — один кадр на всё
+
+// ===== Поиск: кнопка-лупа → inline-строка =====
+const searchWrap=document.getElementById('searchWrap');
+const sToggle=document.getElementById('searchToggle');
+const searchInput=document.getElementById('search');
+const searchField=document.getElementById('searchField');
+// Wipe-«раскатка» строки ведётся JS-кадрами (следящий твин): разворот назад
+// мыслится с текущей точки, работает независимо от причуд CSS-transition движка
+let wipeP=0, wipeTimer=null;
+function wipeTick(){
+  const target=searchWrap.classList.contains('open')?1:0;
+  wipeP+=(target-wipeP)*0.24;
+  if(Math.abs(wipeP-target)<0.004){ wipeP=target; clearInterval(wipeTimer); wipeTimer=null; }
+  const r=(-2+102*(1-wipeP)).toFixed(1)+'%';
+  searchField.style.clipPath='inset(-6px '+r+' -6px 0 round 999px)';
+  searchField.style.opacity=wipeP.toFixed(3);
+  searchField.style.pointerEvents=wipeP>0.03?'auto':'none';
+}
+function wipeKick(){ if(reduceMotion){ wipeP=searchWrap.classList.contains('open')?1:0; wipeTick(); } else if(!wipeTimer){ wipeTimer=setInterval(wipeTick,16); } }
+function openSearch(){
+  searchWrap.classList.add('open');
+  sToggle.setAttribute('aria-expanded','true');
+  wipeKick();
+  requestAnimationFrame(()=>searchInput.focus({preventScroll:true}));
+}
+function closeSearch(){
+  searchWrap.classList.remove('open');
+  sToggle.setAttribute('aria-expanded','false');
+  wipeKick();
+  sToggle.focus();
+}
+sToggle.addEventListener('click',e=>{ e.stopPropagation(); searchWrap.classList.contains('open')?closeSearch():openSearch(); });
+document.addEventListener('click',e=>{ if(!searchWrap.contains(e.target)) closeSearch(); });
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(searchInput.value){ searchInput.value=''; searchInput.dispatchEvent(new Event('input')); searchInput.focus(); }
+  else closeSearch();
+});
+searchInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ closeSearch(); document.getElementById('tours').scrollIntoView({behavior:'smooth'}); }
+});
+// Живой фильтр витрины (карусели)
+searchInput.addEventListener('input',()=>{
+  const q=searchInput.value.trim().toLowerCase();
+  slides.forEach(s=>{ const show=!q||(s.dataset.title||'').toLowerCase().includes(q); s.style.display=show?'':'none'; });
+  carRebuild();
+  document.getElementById('tourCount').textContent=carVisible().length;
+});
+window.resetSearch=function(){ searchInput.value=''; searchInput.dispatchEvent(new Event('input')); };
+
+// Магнитная primary-кнопка в модалке: тянется к курсору (≤6px), возврат спрингом.
+// Только на мыши с точным указателем.
+if(matchMedia('(hover:hover) and (pointer:fine)').matches){
+  const mag=document.querySelector('.modal .btn');
+  let mraf=null,cx=0,cy=0,vx=0,vy=0,tx=0,ty=0,activeMag=false;
+  const K=260,D=22; // stiffness / damping: бесшумный возврат без перелёта
+  function magStep(){
+    vx+=(-K*(cx-tx)-D*vx)/60; vy+=(-K*(cy-ty)-D*vy)/60;
+    cx+=vx/60; cy+=vy/60;
+    mag.style.transform='translate('+cx.toFixed(2)+'px,'+cy.toFixed(2)+'px)';
+    if(Math.hypot(vx,vy)<.02&&Math.hypot(cx-tx,cy-ty)<.05&&!activeMag){ mraf=null; mag.style.transform=''; return; }
+    mraf=requestAnimationFrame(magStep);
+  }
+  mag.addEventListener('pointermove',e=>{
+    activeMag=true;
+    const b=mag.getBoundingClientRect();
+    tx=Math.max(-6,Math.min(6,(e.clientX-(b.left+b.width/2))*0.16));
+    ty=Math.max(-6,Math.min(6,(e.clientY-(b.top+b.height/2))*0.16));
+    if(!mraf)mraf=requestAnimationFrame(magStep);
+  });
+  mag.addEventListener('pointerleave',()=>{ activeMag=false; tx=0; ty=0; if(!mraf)mraf=requestAnimationFrame(magStep); });
+}
+
+// ===== Карусель-«спуск» =====
+const car=document.getElementById('car');
+const carVp=document.getElementById('carVp');
+const carTrack=document.getElementById('carTrack');
+const carCount=document.getElementById('carCount');
+const carPrev=document.getElementById('carPrev');
+const carNext=document.getElementById('carNext');
+const carEmpty=document.getElementById('carEmpty');
+const carEmptyText=document.getElementById('carEmptyText');
+const ridge=document.getElementById('ridge');
+const allSlides=[...document.querySelectorAll('.slide')];
+let slides=allSlides.slice();
+let idx=0, x=0, wc=560, gap=24, step=584, centerX=0, minX=0;
+let tweenTimer=null, carDragging=false, scrubbing=false;
+let dragStartX=0, dragStartTrack=0, moved=0, lastCX=0, lastT=0, vel=0;
+const pad=n=>String(n).padStart(2,'0');
+const clampIdx=i=>Math.max(0,Math.min(slides.length-1,i));
+const clampX=v=>Math.max(minX,Math.min(0,v));
+const carVisible=()=>slides.filter(s=>s.style.display!=='none');
+
+// гребень — профиль высот шести туров
+let ridgeNodes=[]; const SVGNS='http://www.w3.org/2000/svg';
+function ridgeY(a){ return Math.round(22*Math.sqrt(Math.max(0,(a-809)/4833))); }
+function buildRidge(){
+  ridge.innerHTML='';
+  const alts=slides.map(s=>+s.dataset.alt), k=Math.max(1,alts.length-1);
+  const svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 300 36'); svg.setAttribute('preserveAspectRatio','none');
+  const base=document.createElementNS(SVGNS,'polyline'); base.classList.add('line');
+  const fill=document.createElementNS(SVGNS,'polyline'); fill.classList.add('fill'); fill.setAttribute('pathLength','100');
+  svg.append(base,fill); ridge.append(svg);
+  const pts=alts.map((a,i)=>((i/k*300).toFixed(1))+','+(36-ridgeY(a)).toFixed(1)).join(' ');
+  base.setAttribute('points',pts); fill.setAttribute('points',pts); fill.style.strokeDasharray='100';
+  ridgeNodes=alts.map((a,i)=>{
+    const b=document.createElement('button'); b.className='ridge-node'; b.setAttribute('aria-label',slides[i].dataset.title+', '+a+' метров');
+    const d=document.createElement('span'); d.className='dot'; d.style.bottom=ridgeY(a)+'px'; b.append(d);
+    b.style.left=(i/k*100)+'%'; b.addEventListener('click',()=>goTo(i)); ridge.append(b); return b;
+  });
+  ridge._fill=fill;
+}
+function updateRidge(){ if(!ridge._fill)return; ridge._fill.style.strokeDashoffset=(100-(idx/Math.max(1,slides.length-1)*100)).toFixed(1); }
+
+function layout(){
+  const w=carVp.clientWidth||window.innerWidth;
+  wc = w>=1024?Math.min(580,Math.max(320,w*0.36)) : (w>=768?Math.min(460,Math.max(280,w*0.48)) : Math.min(300,Math.max(240,w*0.68)));
+  gap = w>=1024?24:(w>=768?20:16);
+  step=wc+gap;
+  centerX = w/2 - wc/2;                       // позиция, центрирующая слайд 0
+  minX = Math.min(0, w - wc - (slides.length-1)*step); // правая прижатая граница последнего слайда
+  carTrack.style.setProperty('--wc', wc+'px');
+  slides.forEach((s,i)=>{ s.style.marginRight=(i<slides.length-1?gap:0)+'px'; });
+  render(clampX(x));
+}
+
+function render(xx){
+  x=xx;
+  carTrack.style.transform='translate3d('+x+'px,0,0)';
+  slides.forEach((s,i)=>{
+    const o=(i*step+x-centerX)/wc, ao=Math.min(1,Math.abs(o));
+    s.style.transform='scale('+(1-0.06*ao).toFixed(4)+')';
+    s.style.zIndex=ao<0.5?2:1;
+    s.querySelector('.veil').style.opacity=(0.55*Math.pow(ao,0.75)).toFixed(3);
+    s.querySelector('.body').style.opacity=(1-0.45*ao).toFixed(3);
+    s.querySelector('.ph img').style.transform='translateX('+(-o*8).toFixed(1)+'px)';
+    const a=s.querySelector('.cta'); if(a)a.tabIndex=(i===idx?0:-1);
+  });
+  carCount.innerHTML=pad(idx+1)+' <span>/ '+pad(slides.length)+'</span>';
+  carPrev.disabled=idx===0; carNext.disabled=idx===slides.length-1;
+  ridgeNodes.forEach((nd,i)=>nd.classList.toggle('on',i===idx));
+  updateRidge();
+}
+
+function tween(toX,dur,done){
+  if(reduceMotion||dur<=0){ render(toX); done&&done(); return; }
+  const x0=x, t0=performance.now();
+  if(tweenTimer)clearInterval(tweenTimer);
+  tweenTimer=setInterval(()=>{
+    const t=Math.min(1,(performance.now()-t0)/dur);
+    render(x0+(toX-x0)*(1-Math.pow(1-t,5)));
+    if(t===1){ clearInterval(tweenTimer); tweenTimer=null; done&&done(); }
+  },16);
+}
+function goTo(i){
+  i=clampIdx(i);
+  const k=Math.abs(i-idx);
+  idx=i;
+  tween(clampX(centerX - i*step), reduceMotion?0:Math.min(600,300+60*k));
+}
+
+function rubber(nx){
+  if(nx<minX){ const over=minX-nx; nx=minX+over*70/(70+over); }
+  if(nx>0){ const over=nx-0; nx=0-over*70/(70+over); }
+  return nx;
+}
+carVp.addEventListener('pointerdown',e=>{
+  carDragging=true; moved=0; dragStartX=e.clientX; dragStartTrack=x; lastCX=e.clientX; lastT=performance.now(); vel=0;
+  carVp.setPointerCapture(e.pointerId);
+});
+carVp.addEventListener('pointermove',e=>{
+  if(!carDragging)return;
+  const dx=e.clientX-dragStartX; moved=Math.max(moved,Math.abs(dx));
+  const now=performance.now(); vel=(e.clientX-lastCX)/(now-lastT); lastCX=e.clientX; lastT=now;
+  render(rubber(dragStartTrack+dx));
+});
+carVp.addEventListener('pointerup',()=>{ if(carDragging){carDragging=false; snap();} });
+carVp.addEventListener('pointercancel',()=>{ carDragging=false; });
+function snap(){
+  let target=idx, fromSlot=x-(centerX-idx*step);
+  if(Math.abs(vel)>0.45) target=idx+(vel>0?-1:1);
+  else if(Math.abs(fromSlot)>0.18*wc) target=idx+(fromSlot>0?-1:1);
+  idx=clampIdx(target);
+  tween(clampX(centerX-idx*step), reduceMotion?0:300);
+}
+carVp.addEventListener('click',e=>{
+  if(moved>6)return;
+  const s=e.target.closest('.slide'); if(!s)return;
+  const i=slides.indexOf(s); if(i!==idx) goTo(i);
+});
+
+// Прокрутка колесом/тачпадом по горизонтали — карусель «прокручивается», как и просили.
+// Вертикальное колесо (deltaY) оставляем странице.
+let wheelTimer=null;
+carVp.addEventListener('wheel',e=>{
+  if(Math.abs(e.deltaX)<=Math.abs(e.deltaY))return;
+  e.preventDefault();
+  render(rubber(x-e.deltaX));
+  clearTimeout(wheelTimer); wheelTimer=setTimeout(snap,120);
+},{passive:false});
+
+carPrev.addEventListener('click',()=>goTo(idx-1));
+carNext.addEventListener('click',()=>goTo(idx+1));
+carVp.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'){goTo(idx-1);e.preventDefault();}
+  else if(e.key==='ArrowRight'){goTo(idx+1);e.preventDefault();}
+  else if(e.key==='Home'){goTo(0);e.preventDefault();}
+  else if(e.key==='End'){goTo(slides.length-1);e.preventDefault();}
+});
+
+ridge.addEventListener('pointerdown',e=>{ if(e.target.closest('.ridge-node'))return; scrubbing=true; ridge.setPointerCapture(e.pointerId); scrubAt(e); });
+ridge.addEventListener('pointermove',e=>{ if(scrubbing)scrubAt(e); });
+ridge.addEventListener('pointerup',()=>{ if(scrubbing){scrubbing=false; snap();} });
+function scrubAt(e){
+  const r=ridge.getBoundingClientRect();
+  const f=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+  idx=Math.round(f*(slides.length-1));
+  render(clampX(centerX - idx*step));
+}
+
+function carRebuild(){
+  slides=carVisible();
+  const empty=slides.length===0;
+  carEmpty.classList.toggle('show',empty);
+  carEmptyText.textContent=empty?('По «'+searchInput.value.trim()+'» туров нет. Попробуй короче — например, «озёра».'):'';
+  carTrack.style.display=empty?'none':'';
+  document.querySelector('.car-bar').style.display=empty?'none':'';
+  if(empty)return;
+  idx=0; buildRidge(); layout(); render(0);
+}
+
+// Раскрытие контента на скролле + страховка (без IntersectionObserver)
+const revealEls=[...document.querySelectorAll('.sect h2,.sect .lead,.footer .big')];
+revealEls.forEach(el=>el.classList.add('rv'));
+function revealStep(){
+  const vh=window.innerHeight;
+  if(!car.dataset.shown && car.getBoundingClientRect().top<vh*0.88){ car.classList.add('in-view'); car.dataset.shown='1'; }
+  revealEls.forEach(el=>{ if(el.dataset.shown)return; if(el.getBoundingClientRect().top<vh*0.85){el.classList.add('in-view');el.dataset.shown='1';} });
+}
+function revealAll(){
+  car.classList.add('in-view'); car.dataset.shown='1';
+  revealEls.forEach(el=>{el.classList.add('in-view');el.dataset.shown='1';});
+  document.querySelectorAll('.hero .kicker,.hero h1,.hero p').forEach(el=>{el.style.animation='none';});
+}
+window.addEventListener('resize',()=>{ if(!carEmpty.classList.contains('show'))layout(); },{passive:true});
+
+// Авторизация (демо-состояние)
+let authMode='login';
+const overlay=document.getElementById('overlay');
+function openAuth(e,mode){ e.preventDefault(); setMode(mode); overlay.classList.add('open'); return false; }
+function closeModal(){ overlay.classList.remove('open'); }
+function setMode(mode){
+  authMode=mode;
+  const applyMode=()=>{
+    document.getElementById('modalTitle').textContent = mode==='login' ? 'Вход' : 'Регистрация';
+    document.getElementById('modalSub').textContent = mode==='login' ? 'Войдите, чтобы открыть личный кабинет.' : 'Создайте аккаунт клиента.';
+    document.getElementById('pwLabel').textContent = mode==='login' ? 'Пароль' : 'Придумайте пароль';
+    document.getElementById('authBtn').textContent = mode==='login' ? 'Войти' : 'Создать аккаунт';
+    document.getElementById('authSwitch').innerHTML = mode==='login'
+      ? 'Нет аккаунта? <a onclick="setMode(\'register\')">Зарегистрироваться</a>'
+      : 'Есть аккаунт? <a onclick="setMode(\'login\')">Войти</a>';
+  };
+  // Если окно уже открыто — хореография свопа: уход вверх 140ms → подмена →
+  // высота анимируется к новой, контент «спускается» каскадом. При первом открытии — просто текст
+  if(overlay.classList.contains('open')){
+    const modal=overlay.querySelector('.modal');
+    modal.style.height=modal.scrollHeight+'px';           // фиксируем текущую высоту
+    modal.classList.add('swapping');
+    setTimeout(()=>{
+      applyMode();
+      modal.classList.remove('swapping');                  // вход: каскад из CSS
+      modal.style.height=modal.scrollHeight+'px';          // «дыхание» к новой высоте
+      setTimeout(()=>{ modal.style.height=''; },340);
+    },140);
+  }else applyMode();
+}
+function doAuth(){
+  const email=document.getElementById('authEmail').value.trim();
+  if(!email){ document.getElementById('authEmail').focus(); return; }
+  login(email);
+}
+function login(email){
+  closeModal();
+  const area=document.getElementById('authArea');
+  area.textContent='';
+  const user=document.createElement('div');user.className='user';
+  const av=document.createElement('div');av.className='avatar';av.textContent=(email[0]||'?').toUpperCase();
+  const mail=document.createElement('span');mail.className='mail';mail.textContent=email;
+  const out=document.createElement('button');out.className='out';out.textContent='Выйти';out.onclick=logout;
+  user.append(av,mail,out);area.append(user);
+}
+function logout(){
+  document.getElementById('authArea').innerHTML =
+    '<a href="#" class="login" onclick="return openAuth(event,\'login\')">Войти</a>'+
+    '<a href="#" class="reg" onclick="return openAuth(event,\'register\')">Регистрация</a>';
+}
+function openCabinet(e){
+  e.preventDefault();
+  const logged=document.getElementById('authArea').querySelector('.user');
+  if(!logged){ openAuth(e,'login'); document.getElementById('modalSub').textContent='Войдите, чтобы открыть личный кабинет.'; }
+  else { alert('Личный кабинет (демо): активные брони, история, документы.'); }
+  return false;
+}
+
+apply(0);
+buildRidge();
+layout();
+revealStep();
+setTimeout(revealAll,1600);
+</script>
+</body>
+</html>
