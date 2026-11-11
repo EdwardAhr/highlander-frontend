@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
+import { Button } from "@/components/ui";
 import { apiError } from "@/lib/errors";
 
 const inputCls =
@@ -18,6 +19,7 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,18 +27,20 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register({ email, password, phone: phone || null });
+      setLoading(false);
+      setSuccess(true);
+      await new Promise((r) => setTimeout(r, 350));
       router.push("/cabinet");
       router.refresh();
     } catch (err) {
       setError(apiError(err));
-    } finally {
       setLoading(false);
     }
   }
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">
+      <h1 className="font-display text-2xl font-normal tracking-tight">
         Регистрация
       </h1>
       <p className="mt-1 text-sm text-muted">
@@ -79,13 +83,15 @@ export default function RegisterPage() {
 
         {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-        <button
+        <Button
           type="submit"
-          disabled={loading}
-          className="rounded-control bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
+          loading={loading}
+          success={success}
+          error={!!error}
+          disabled={loading || success}
         >
-          {loading ? "Регистрация…" : "Создать аккаунт"}
-        </button>
+          Создать аккаунт
+        </Button>
       </form>
     </div>
   );

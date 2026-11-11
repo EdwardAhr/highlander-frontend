@@ -1,9 +1,47 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Токены дизайн-системы Highlander.
-   Светлая тема «Утренний воздух» — по умолчанию (:root).
-   Тёмная тема «Перевал» — переопределение [data-theme="dark"].
+   Регистрируем цветовые токены как анимируемые (@property), чтобы
+   при уходе с витрины фон плавно перетекал в «вершинную» палитру
+   вместо резкой вспышки белым. Переход включается классом .theme-fade
+   только на время навигации (скролл остаётся мгновенным).
+   ============================================================ */
+@property --bg { syntax: "<color>"; inherits: true; initial-value: #F4F8F9; }
+@property --surface { syntax: "<color>"; inherits: true; initial-value: #FFFFFF; }
+@property --border { syntax: "<color>"; inherits: true; initial-value: #DFEAEE; }
+@property --text { syntax: "<color>"; inherits: true; initial-value: #172530; }
+@property --text-secondary { syntax: "<color>"; inherits: true; initial-value: #63757F; }
+@property --text-muted { syntax: "<color>"; inherits: true; initial-value: #8A9BA5; }
+@property --accent { syntax: "<color>"; inherits: true; initial-value: #0EA5E9; }
+@property --accent-hover { syntax: "<color>"; inherits: true; initial-value: #0284C7; }
+@property --accent-contrast { syntax: "<color>"; inherits: true; initial-value: #FFFFFF; }
+@property --fog { syntax: "<color>"; inherits: true; initial-value: #E7F0F3; }
+@property --border-strong { syntax: "<color>"; inherits: true; initial-value: #C7DEE3; }
+
+/* Плавный переход токенов (включается на <html> при уходе с витрины). */
+.theme-fade {
+  transition:
+    --bg 280ms ease 60ms,
+    --surface 280ms ease 60ms,
+    --border 280ms ease 60ms,
+    --text 280ms ease 60ms,
+    --text-secondary 280ms ease 60ms,
+    --text-muted 280ms ease 60ms,
+    --accent 280ms ease 60ms,
+    --accent-hover 280ms ease 60ms,
+    --accent-contrast 280ms ease 60ms,
+    --fog 280ms ease 60ms,
+    --border-strong 280ms ease 60ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-fade { transition: none; }
+}
+
+/* ============================================================
+   Токены дизайн-системы Highlander — ОДНА монолитная тема.
+   Нет светлой/тёмной: единый скролл-нарратив «вершина → глубокий лес»
+   (сверху снег/лёд/небо, внизу зелёные леса). База — «вершина» (снег/нёбо).
+   На витрине `/` ScrollTheme интерполирует --bg/--surface/--border и FG-токены.
    ============================================================ */
 
 :root {
@@ -13,8 +51,8 @@
   --text: #172530;
   --text-secondary: #63757F;
   --text-muted: #8A9BA5;
-  --accent: #3E7C8C;
-  --accent-hover: #356A78;
+  --accent: #0EA5E9;
+  --accent-hover: #0284C7;
   --accent-contrast: #FFFFFF;
   --border: #DFEAEE;
   --border-strong: #C7DEE3;
@@ -40,47 +78,7 @@
 
   --shadow-card: 0 2px 8px rgb(23 37 48 / 0.05), 0 12px 32px rgb(23 37 48 / 0.07);
   --shadow-elevated: 0 8px 24px rgb(23 37 48 / 0.12), 0 2px 6px rgb(23 37 48 / 0.06);
-  --shadow-glow: 0 0 0 3px rgb(62 124 140 / 0.18);
-
-  --font-display-active: var(--font-manrope);
-}
-
-:root[data-theme="dark"] {
-  --bg: #0B1017;
-  --surface: #141C26;
-  --surface-raised: #1A2531;
-  --text: #E9E4D8;
-  --text-secondary: #8FA0AE;
-  --text-muted: #5A6B78;
-  --accent: #E0A458;
-  --accent-hover: #E8B373;
-  --accent-contrast: #1A1205;
-  --border: #2A3644;
-  --border-strong: #3A4A5C;
-  --mist: #6C8FA3;
-  --fog: #101A24;
-  --overlay: rgb(0 0 0 / 0.55);
-  --danger: #E07A6B;
-
-  --status-pending-bg: #2A2418;
-  --status-pending-text: #E0A458;
-  --status-confirmed-bg: #15262C;
-  --status-confirmed-text: #6C8FA3;
-  --status-paid-bg: #231B2E;
-  --status-paid-text: #B493D9;
-  --status-active-bg: #14261C;
-  --status-active-text: #7AC992;
-  --status-rejected-bg: #2C1B1A;
-  --status-rejected-text: #E08A7B;
-
-  --radius-card: 12px;
-  --radius-control: 8px;
-
-  --shadow-card: 0 0 0 1px rgb(42 54 68 / 0.5);
-  --shadow-elevated: 0 0 0 1px rgb(58 74 92 / 0.6), 0 12px 32px rgb(0 0 0 / 0.5);
-  --shadow-glow: 0 0 0 3px rgb(224 164 88 / 0.22);
-
-  --font-display-active: var(--font-playfair);
+  --shadow-glow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 /* Маппинг токенов в Tailwind-утилиты */
@@ -107,20 +105,54 @@
   --shadow-elevated: var(--shadow-elevated);
   --shadow-glow: var(--shadow-glow);
 
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-display-active);
-  --font-mono: var(--font-plex-mono);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --font-sans: var(--font-golos);
+  --font-display: var(--font-prata);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 /* ============================================================
    Базовые стили
    ============================================================ */
 
+/* Скрытый скроллбар для горизонтальных лент (Tailwind v4 @utility). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  font-family: var(--font-golos), system-ui, -apple-system, sans-serif;
+}
+
+/* ============================================================
+   Логотип: скала «Эльбрус» (знак из дизайн-прототипа)
+   ============================================================ */
+.logo-rock .rgTop {
+  stop-color: color-mix(in srgb, var(--text) 86%, #8a7b66);
+}
+.logo-rock .rgBase {
+  stop-color: color-mix(in srgb, var(--accent) 48%, var(--text));
+}
+.logo-rock .rock-outline {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.logo-rock .rock-fill {
+  fill: url(#elbrus-logo-grad);
+}
+.logo-rock .snow {
+  fill: #fff;
+  stroke: var(--bg);
+  stroke-width: 0.5;
 }
 
 /* ============================================================
@@ -191,7 +223,7 @@ body {
   to { stroke-dashoffset: 0; }
 }
 .opener-word {
-  font-family: var(--font-display-active);
+  font-family: var(--font-prata);
   font-weight: 600;
   font-size: clamp(24px, 5vw, 40px);
   color: var(--text);
@@ -212,3 +244,107 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+/* ============================================================
+   Кнопки: motion-отклик «Природа/Кавказ» (туман/гребень/высота)
+   ============================================================ */
+
+/* Туманный импульс из точки нажатия */
+.btn-fog {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 34%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 45%,
+    transparent 70%
+  );
+  animation: fog-pulse 480ms ease-out forwards;
+}
+@keyframes fog-pulse {
+  from { transform: translate(-50%, -50%) scale(0.15); opacity: 0.9; }
+  to { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+}
+
+/* Лейбл кнопки: уходит вверх и тает на время loading/success */
+.btn-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.btn-label.is-leaving {
+  opacity: 0;
+  transform: translateY(-7px);
+}
+
+/* Спиннер на акцентной кнопке */
+.btn-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent-contrast) 35%, transparent);
+  border-top-color: var(--accent-contrast);
+  animation: btn-spin 0.7s linear infinite;
+}
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Галочка успеха (рисуется штрихом-гребнем) */
+.btn-tick {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 20px;
+  height: 20px;
+}
+.btn-tick path {
+  fill: none;
+  stroke: var(--accent-contrast);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+  animation: tick-draw 220ms ease forwards;
+}
+@keyframes tick-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Ошибка: короткий горизонтальный сдвиг */
+.btn-shake {
+  animation: btn-shake 300ms ease;
+}
+@keyframes btn-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* Раскрытие поля (код OTP) — туманная шторка, наследие opener-reveal */
+.field-reveal {
+  animation: field-reveal 320ms ease forwards;
+}
+@keyframes field-reveal {
+  from { opacity: 0; transform: translateY(-4px); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-fog { display: none; }
+  .btn-label { transition: none; }
+  .btn-shake,
+  .field-reveal { animation: none; }
+  .btn-tick path { animation: none; stroke-dashoffset: 0; }
+}
+

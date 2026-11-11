@@ -1,154 +1,69 @@
-"use client";
+import { FEATURED_TOURS } from "@/lib/featured-tours";
+import { ScrollTheme } from "@/components/scroll-theme";
+import { AltimeterRail } from "@/components/altimeter-rail";
+import { TourCarousel } from "@/components/tour-carousel";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchTours, type TourFilters } from "@/lib/queries";
-import { TourCard } from "@/components/tour-card";
-import { EmptyState, ErrorState, Spinner } from "@/components/ui";
-import { apiError } from "@/lib/errors";
-import type { components } from "@/lib/api/schema";
-
-type TourSort = components["schemas"]["TourSort"];
-
-const SORT_OPTIONS: { value: TourSort; label: string }[] = [
-  { value: "-created_at", label: "Сначала новые" },
-  { value: "created_at", label: "Сначала старые" },
-  { value: "price", label: "Цена ↑" },
-  { value: "-price", label: "Цена ↓" },
-];
-
-const PAGE_SIZE = 20;
-
-const inputCls =
-  "rounded-control border border-border bg-surface px-3 py-2 outline-none focus:border-accent focus:shadow-glow";
+function toursCount(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} тур`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} тура`;
+  return `${n} туров`;
+}
 
 export default function Storefront() {
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<TourSort>("-created_at");
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
-  const [offset, setOffset] = useState(0);
-
-  const filters: TourFilters = {
-    query: query || undefined,
-    sort,
-    limit: PAGE_SIZE,
-    offset,
-    price_min: priceMin ? Number(priceMin) : undefined,
-    price_max: priceMax ? Number(priceMax) : undefined,
-  };
-
-  const { data: tours, isPending, error, isFetching } = useQuery({
-    queryKey: ["tours", filters],
-    queryFn: () => fetchTours(filters),
-  });
-
-  const hasMore = (tours?.length ?? 0) === PAGE_SIZE;
-
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">
-          Горные туры Северного Кавказа
-        </h1>
-        <p className="mt-2 text-muted">
-          Проверенные маршруты с гидами, страховкой и регистрацией в МЧС.
+    <div className="flex flex-col">
+      <ScrollTheme />
+      <AltimeterRail />
+
+      {/* Hero — вершина */}
+      <section className="flex min-h-screen flex-col justify-center">
+        <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
+          43°21′ N · 42°27′ E — 5 642 м
         </p>
-      </div>
+        <h1 className="mt-4 font-display text-[clamp(40px,7vw,88px)] leading-[1.02]">
+          Эльбрус.
+        </h1>
+        <p className="mt-5 max-w-[520px] text-lg leading-relaxed text-muted">
+          От снежной шапки 5 642 м — вниз, к зелёным лесам. Выбирай маршрут,
+          видно куда едёшь.
+        </p>
+      </section>
 
-      <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-card md:flex-row md:items-end">
-        <label className="flex flex-1 flex-col gap-1 text-sm">
-          <span className="font-medium text-muted">Поиск</span>
-          <input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOffset(0);
-            }}
-            placeholder="Название тура…"
-            className={inputCls}
-          />
-        </label>
+      {/* Туры */}
+      <section className="flex flex-col gap-4 py-10">
+        <div>
+          <h2 className="font-display text-[clamp(28px,4.4vw,46px)] leading-[1.1]">
+            Туры
+          </h2>
+          <p className="font-mono text-xs text-faint">
+            {toursCount(FEATURED_TOURS.length)}
+          </p>
+        </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-muted">Цена от</span>
-          <input
-            type="number"
-            min={0}
-            value={priceMin}
-            onChange={(e) => {
-              setPriceMin(e.target.value);
-              setOffset(0);
-            }}
-            placeholder="0"
-            className={`w-28 ${inputCls}`}
-          />
-        </label>
+        <TourCarousel tours={FEATURED_TOURS} />
+      </section>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-muted">до</span>
-          <input
-            type="number"
-            min={0}
-            value={priceMax}
-            onChange={(e) => {
-              setPriceMax(e.target.value);
-              setOffset(0);
-            }}
-            placeholder="∞"
-            className={`w-28 ${inputCls}`}
-          />
-        </label>
+      {/* Спуск */}
+      <section className="flex flex-col gap-3 py-24">
+        <h2 className="font-display text-[clamp(28px,4.4vw,46px)] leading-[1.1]">
+          Спуск продолжается.
+        </h2>
+        <p className="max-w-[560px] text-muted">
+          Ниже — хвойный лес, тропы и подножие. Цвет страницы идёт вместе с тобой.
+        </p>
+      </section>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-muted">Сортировка</span>
-          <select
-            value={sort}
-            onChange={(e) => {
-              setSort(e.target.value as TourSort);
-              setOffset(0);
-            }}
-            className={inputCls}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {isPending ? (
-        <Spinner />
-      ) : error ? (
-        <ErrorState message={apiError(error)} />
-      ) : tours && tours.length === 0 ? (
-        <EmptyState
-          title="Ничего не найдено"
-          hint="Попробуйте изменить условия поиска"
-        />
-      ) : (
-        <>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {tours?.map((tour) => (
-              <TourCard key={tour.id} tour={tour} />
-            ))}
-          </div>
-
-          {hasMore ? (
-            <div className="flex justify-center pt-2">
-              <button
-                onClick={() => setOffset((o) => o + PAGE_SIZE)}
-                disabled={isFetching}
-                className="rounded-control border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-fog disabled:opacity-50"
-              >
-                Показать ещё
-              </button>
-            </div>
-          ) : null}
-        </>
-      )}
+      {/* Футер — подножие */}
+      <footer className="flex flex-wrap items-end justify-between gap-6 border-t border-border py-16">
+        <p className="font-display text-[clamp(24px,3vw,34px)] leading-[1.15]">
+          Спускайся.
+          <br />
+          Путь — это тоже вершина.
+        </p>
+        <p className="font-mono text-xs text-muted">Highlander · горные туры Кавказа</p>
+      </footer>
     </div>
   );
 }
