@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { FEATURED_TOURS } from "@/lib/featured-tours";
 import { ScrollTheme } from "@/components/scroll-theme";
 import { AltimeterRail } from "@/components/altimeter-rail";
@@ -34,21 +33,13 @@ export default function Storefront() {
 
       {/* Туры */}
       <section className="flex flex-col gap-4 py-10">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-[clamp(28px,4.4vw,46px)] leading-[1.1]">
-              Туры
-            </h2>
-            <p className="font-mono text-xs text-faint">
-              {toursCount(FEATURED_TOURS.length)}
-            </p>
-          </div>
-          <Link
-            href="/tours"
-            className="shrink-0 text-sm font-medium text-accent transition-colors hover:text-accent-hover"
-          >
-            Весь каталог →
-          </Link>
+        <div>
+          <h2 className="font-display text-[clamp(28px,4.4vw,46px)] leading-[1.1]">
+            Туры
+          </h2>
+          <p className="font-mono text-xs text-faint">
+            {toursCount(FEATURED_TOURS.length)}
+          </p>
         </div>
 
         <TourCarousel tours={FEATURED_TOURS} />

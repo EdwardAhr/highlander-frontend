@@ -30,9 +30,6 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-// Устанавливает тему до первой отрисовки (защита от «мигания»).
-const themeInitScript = `(function(){try{var s=localStorage.getItem("highlander-theme");var t=(s==="light"||s==="dark")?s:(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="light";}})();`;
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -40,9 +37,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${prata.variable} ${golos.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>
           <Opener />

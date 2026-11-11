@@ -1,18 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import {
-  terrainAt,
-  phaseAt,
-  fgAt,
-  nightAt,
-  progressOf,
-  toHex,
-  type FgTokenKey,
-} from "@/lib/journey";
-import { journeyActive } from "@/lib/theme";
-
-const TERRAIN_VARS = ["--bg", "--surface", "--border"] as const;
+import { useEffect } from "react";
+import { terrainAt, fgAt, progressOf, toHex, type FgTokenKey } from "@/lib/journey";
 
 const FG_VARS: Record<FgTokenKey, string> = {
   text: "--text",
@@ -25,61 +14,53 @@ const FG_VARS: Record<FgTokenKey, string> = {
   borderStrong: "--border-strong",
 };
 
+/** «Вершинная» палитра из :root — в неё плавно возвращаемся при уходе с витрины. */
+const PEAK: Record<string, string> = {
+  "--bg": "#F4F8F9",
+  "--surface": "#FFFFFF",
+  "--border": "#DFEAEE",
+  "--text": "#172530",
+  "--text-secondary": "#63757F",
+  "--text-muted": "#8A9BA5",
+  "--accent": "#0EA5E9",
+  "--accent-hover": "#0284C7",
+  "--accent-contrast": "#FFFFFF",
+  "--fog": "#E7F0F3",
+  "--border-strong": "#C7DEE3",
+};
+
 /**
- * Контроллер скролл-темы лендинга. Монтируется только на витрине («спуск»).
- * Пишет terrain-токены (--bg/--surface/--border) и FG-токены (текст/акцент/…)
- * инлайн — только при изменении. data-theme переключает по фазе (тени/радиусы/
- * статусы). На unmount возвращает data-theme сохранённому режиму пользователя.
+ * Контроллер скролл-темы витрины («вершина → глубокий изумрудный лес + золото»).
+ * Монтируется только на `/`. Пишет terrain- и FG-токены инлайн на <html>.
+ * Тема одна, непрерывная (никаких светлой/тёмной). Маршруты приложения — «вершина».
+ *
+ * При уходе с витрины (навигация) включает класс .theme-fade и ставит «вершинные»
+ * токены — фон плавно перетекает в бело-голубое, без резкой вспышки белым.
+ * На монтировании класс снимается — скролл снова мгновенный.
  */
 export function ScrollTheme() {
-  const lastPhaseRef = useRef<"light" | "dark">("light");
-  const lastValsRef = useRef<Record<string, string>>({});
-
   useEffect(() => {
     const html = document.documentElement;
+    html.classList.remove("theme-fade");
 
-    const apply = () => {
-      const p = progressOf();
-
-      const t = terrainAt(p);
-      const terrain: Record<string, string> = {
-        "--bg": toHex(t.bg),
-        "--surface": toHex(t.surface),
-        "--border": toHex(t.border),
-      };
-      for (const [key, value] of Object.entries(terrain)) {
-        if (lastValsRef.current[key] !== value) {
-          html.style.setProperty(key, value);
-          lastValsRef.current[key] = value;
-        }
-      }
-
-      const fg = fgAt(p);
-      for (const [key, value] of Object.entries(fg)) {
-        const varName = FG_VARS[key as FgTokenKey];
-        const hex = toHex(value);
-        if (lastValsRef.current[varName] !== hex) {
-          html.style.setProperty(varName, hex);
-          lastValsRef.current[varName] = hex;
-        }
-      }
-
-      // Скаляр «ночь» — тени/радиусы интерполируются через calc(var(--night)).
-      const night = nightAt(p).toFixed(4);
-      if (lastValsRef.current["--night"] !== night) {
-        html.style.setProperty("--night", night);
-        lastValsRef.current["--night"] = night;
-      }
-
-      const phase = phaseAt(p, lastPhaseRef.current);
-      if (phase !== lastPhaseRef.current) {
-        lastPhaseRef.current = phase;
-        html.dataset.theme = phase;
+    const writeVar = (name: string, value: string) => {
+      if (html.style.getPropertyValue(name) !== value) {
+        html.style.setProperty(name, value);
       }
     };
 
-    // Захватываем владение палитрой до того, как ThemeProvider запишет data-theme.
-    journeyActive.current = true;
+    const apply = () => {
+      const p = progressOf();
+      const t = terrainAt(p);
+      writeVar("--bg", toHex(t.bg));
+      writeVar("--surface", toHex(t.surface));
+      writeVar("--border", toHex(t.border));
+      const fg = fgAt(p);
+      for (const key of Object.keys(FG_VARS) as FgTokenKey[]) {
+        writeVar(FG_VARS[key], toHex(fg[key]));
+      }
+    };
+
     apply();
 
     let raf = 0;
@@ -99,27 +80,11 @@ export function ScrollTheme() {
       window.removeEventListener("resize", schedule);
       if (raf) cancelAnimationFrame(raf);
 
-      journeyActive.current = false;
-
-      // Сначала вернуть data-theme (иначе при снятии inline-переменных
-      // мелькнёт fallback светлой темы), затем убрать inline-токены.
-      let stored: string | null = null;
-      try {
-        stored = window.localStorage.getItem("highlander-theme");
-      } catch {
-        /* ignore */
+      // Плавно возвращаемся к «вершинной» палитре (переход с задержкой).
+      html.classList.add("theme-fade");
+      for (const [name, value] of Object.entries(PEAK)) {
+        html.style.setProperty(name, value);
       }
-      const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      html.dataset.theme =
-        stored === "light" || stored === "dark"
-          ? stored
-          : sysDark
-            ? "dark"
-            : "light";
-
-      for (const key of TERRAIN_VARS) html.style.removeProperty(key);
-      for (const key of Object.values(FG_VARS)) html.style.removeProperty(key);
-      html.style.removeProperty("--night");
     };
   }, []);
 

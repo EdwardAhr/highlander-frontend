@@ -6,7 +6,7 @@ import { Suspense, useState } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { requestOtp } from "@/lib/queries";
 import { apiError } from "@/lib/errors";
-import { Spinner } from "@/components/ui";
+import { Button, Spinner } from "@/components/ui";
 
 const inputCls =
   "rounded-control border border-border bg-surface px-3 py-2 outline-none focus:border-accent focus:shadow-glow";
@@ -32,6 +32,7 @@ function LoginForm() {
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -39,11 +40,13 @@ function LoginForm() {
     setLoading(true);
     try {
       await login(email, password);
+      setLoading(false);
+      setSuccess(true);
+      await new Promise((r) => setTimeout(r, 350));
       router.push(next);
       router.refresh();
     } catch (err) {
       setError(apiError(err));
-    } finally {
       setLoading(false);
     }
   }
@@ -54,10 +57,10 @@ function LoginForm() {
     setLoading(true);
     try {
       await requestOtp(email);
+      setLoading(false);
       setOtpSent(true);
     } catch (err) {
       setError(apiError(err));
-    } finally {
       setLoading(false);
     }
   }
@@ -68,11 +71,13 @@ function LoginForm() {
     setLoading(true);
     try {
       await loginWithOtp(email, code);
+      setLoading(false);
+      setSuccess(true);
+      await new Promise((r) => setTimeout(r, 350));
       router.push(next);
       router.refresh();
     } catch (err) {
       setError(apiError(err));
-    } finally {
       setLoading(false);
     }
   }
@@ -87,7 +92,12 @@ function LoginForm() {
         </Link>
       </p>
 
-      <div className="mt-5 flex rounded-control bg-fog p-1">
+      <div className="relative mt-5 flex rounded-control bg-fog p-1">
+        <span
+          aria-hidden
+          className="absolute inset-y-1 left-1 w-[calc(50%_-_4px)] rounded-md bg-surface shadow-card transition-transform duration-300 ease-out"
+          style={{ transform: mode === "otp" ? "translateX(100%)" : "translateX(0)" }}
+        />
         {(["password", "otp"] as const).map((m) => (
           <button
             key={m}
@@ -95,8 +105,8 @@ function LoginForm() {
               setMode(m);
               setError(null);
             }}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === m ? "bg-surface shadow-card" : "text-muted"
+            className={`relative z-10 flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              mode === m ? "text-foreground" : "text-muted"
             }`}
           >
             {m === "password" ? "По паролю" : "По коду (OTP)"}
@@ -129,13 +139,15 @@ function LoginForm() {
 
           {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="rounded-control bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
+            loading={loading}
+            success={success}
+            error={!!error}
+            disabled={loading || success}
           >
-            {loading ? "Вход…" : "Войти"}
-          </button>
+            Войти
+          </Button>
         </form>
       ) : (
         <form
@@ -155,7 +167,7 @@ function LoginForm() {
           </label>
 
           {otpSent ? (
-            <label className="flex flex-col gap-1 text-sm">
+            <label className="field-reveal flex flex-col gap-1 text-sm">
               <span className="font-medium text-muted">Код</span>
               <input
                 required
@@ -172,13 +184,15 @@ function LoginForm() {
 
           {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="rounded-control bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover disabled:opacity-50"
+            loading={loading}
+            success={success}
+            error={!!error}
+            disabled={loading || success}
           >
-            {loading ? "Отправка…" : otpSent ? "Подтвердить" : "Отправить код"}
-          </button>
+            {otpSent ? "Подтвердить" : "Отправить код"}
+          </Button>
         </form>
       )}
     </div>

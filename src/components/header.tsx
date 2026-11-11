@@ -3,59 +3,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/auth-context";
-import { useTheme } from "@/lib/theme";
+import { fetchTours } from "@/lib/queries";
+import { formatPrice } from "@/lib/labels";
 import { Logo } from "@/components/logo";
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  const pathname = usePathname();
-  const active = pathname === href;
-  return (
-    <Link
-      href={href}
-      className={`rounded-control px-3 py-2 text-sm font-medium transition-colors ${
-        active
-          ? "bg-foreground text-background"
-          : "text-muted hover:bg-fog hover:text-foreground"
-      }`}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function ThemeToggle() {
-  const { theme, toggle } = useTheme();
-  const dark = theme === "dark";
-  return (
-    <button
-      onClick={toggle}
-      aria-label={dark ? "Включить светлую тему" : "Включить тёмную тему"}
-      title={dark ? "Светлая тема" : "Тёмная тема"}
-      className="flex h-9 w-9 items-center justify-center rounded-control border border-border text-muted transition-colors hover:text-foreground hover:border-border-strong"
-    >
-      {dark ? (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-        </svg>
-      ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
-        </svg>
-      )}
-    </button>
-  );
-}
-
-/** Поиск в шапке: кнопка-лупа раскрывает поле-пилюлю, Enter → /tours?query=… */
+/**
+ * Поиск в шапке. Десктоп (lg+): постоянная строка в центре. Мобильный (<lg):
+ * лупа-тайл справа, поле разворачивается влево. Ввод → живой список туров →
+ * переход на /tours/[id].
+ */
 function SearchField() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [active, setActive] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Дебаунс ввода.
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q.trim()), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  // Закрытие по клику вне.
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
@@ -67,79 +41,163 @@ function SearchField() {
     return () => document.removeEventListener("click", onDocClick);
   }, [open]);
 
-  const submit = () => {
-    const value = q.trim();
-    if (!value) return;
-    router.push("/tours?query=" + encodeURIComponent(value));
+  const query = debounced.length >= 2 ? debounced : "";
+
+  const { data: results = [], isPending, error } = useQuery({
+    queryKey: ["tour-search", query],
+    queryFn: () => fetchTours({ query, limit: 5 }),
+    enabled: query.length > 0,
+    staleTime: 30_000,
+  });
+
+  const goToTour = (id: string) => {
+    router.push("/tours/" + id);
     setOpen(false);
     setQ("");
+    setActive(-1);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      submit();
-    } else if (e.key === "Escape") {
+    if (e.key === "Escape") {
       if (q) {
         setQ("");
         inputRef.current?.focus();
       } else {
         setOpen(false);
       }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((a) => Math.min(a + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((a) => Math.max(a - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (active >= 0 && results[active]) {
+        goToTour(results[active].id);
+      }
     }
   };
 
+  const showDropdown = query.length > 0;
+
+  const fieldWrap = [
+    // мобайл: оверлей, растёт влево от лупы
+    "absolute right-[calc(100%+10px)] top-1/2 z-20 -translate-y-1/2",
+    "w-[min(calc(100vw-82px),480px)]",
+    open
+      ? "opacity-100 [clip-path:inset(0_0_0_0_round_999px)]"
+      : "opacity-0 [clip-path:inset(0_0_0_100%_round_999px)] pointer-events-none",
+    "transition-[clip-path,opacity] duration-[240ms] ease-soft",
+    // десктоп: постоянное поле в потоке, центрируется ячейкой
+    "lg:relative lg:right-auto lg:top-auto lg:z-auto lg:translate-y-0",
+    "lg:w-full lg:opacity-100 lg:pointer-events-auto lg:[clip-path:none]",
+    "motion-reduce:transition-none",
+  ].join(" ");
+
   return (
-    <div ref={wrapRef} className="relative ml-auto flex items-center">
-      <button
-        type="button"
-        onClick={() => {
-          if (open) {
-            setOpen(false);
-          } else {
-            setOpen(true);
-            requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
-          }
-        }}
-        aria-label="Поиск"
-        aria-expanded={open}
-        aria-controls="header-search"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-muted transition-colors hover:border-accent hover:text-accent"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          className="h-[18px] w-[18px]"
+    <div
+      ref={wrapRef}
+      className="flex min-w-0 w-full items-center justify-end lg:justify-center"
+    >
+      <div className="relative flex items-center lg:w-full lg:max-w-[420px]">
+        {/* Мобильная лупа (кроссфейд в крест) */}
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Поиск"
+          aria-expanded={open}
+          aria-controls="header-search"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-fog text-muted transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:shadow-glow lg:hidden"
         >
-          {open ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className={`h-[18px] w-[18px] transition-opacity duration-150 ${
+              open ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4-4" />
+          </svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className={`absolute inset-0 m-auto h-[18px] w-[18px] transition-opacity duration-150 ${
+              open ? "opacity-100" : "opacity-0"
+            }`}
+          >
             <path d="M6 6l12 12M18 6L6 18" />
-          ) : (
-            <>
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4-4" />
-            </>
-          )}
-        </svg>
-      </button>
-      <div
-        id="header-search"
-        className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 transition-[clip-path,opacity] duration-300 ${
-          open
-            ? "pointer-events-auto opacity-100 [clip-path:inset(-8px_0_-8px_0)]"
-            : "opacity-0 [clip-path:inset(-8px_100%_-8px_0)]"
-        }`}
-      >
-        <input
-          ref={inputRef}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Гора, маршрут, регион…"
-          className="w-[clamp(220px,28vw,360px)] rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground outline-none focus:border-accent focus:shadow-glow"
-        />
+          </svg>
+        </button>
+
+        {/* Поле + дропдаун */}
+        <div id="header-search" className={`group ${fieldWrap}`}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted transition-colors duration-200 group-hover:text-foreground group-focus-within:text-accent"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4-4" />
+          </svg>
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setActive(-1);
+            }}
+            onKeyDown={onKeyDown}
+            placeholder="Гора, маршрут, регион…"
+            className="h-10 w-full rounded-full border border-transparent bg-fog pl-10 pr-4 text-sm text-foreground caret-accent placeholder:text-faint outline-none transition-[background-color,border-color,box-shadow] duration-200 ease-out hover:border-border hover:bg-surface/60 focus:border-accent focus:bg-surface focus:shadow-glow motion-reduce:transition-none"
+          />
+
+          <div
+            className={`absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-control border border-border bg-surface shadow-elevated transition-[opacity,clip-path] ease-out motion-reduce:transition-none ${
+              showDropdown
+                ? "opacity-100 [clip-path:inset(0_0_0_0_round_10px)] duration-[180ms]"
+                : "pointer-events-none opacity-0 [clip-path:inset(0_0_100%_0_round_10px)] duration-[120ms] ease-in"
+            }`}
+          >
+            {isPending ? (
+              <p className="flex min-h-11 items-center px-4 text-sm text-muted">Поиск…</p>
+            ) : error ? (
+              <p className="flex min-h-11 items-center px-4 text-sm text-danger">Не удалось найти</p>
+            ) : results.length === 0 ? (
+              <p className="flex min-h-11 items-center px-4 text-sm text-muted">Ничего не найдено</p>
+            ) : (
+              <ul role="listbox" className="max-h-72 overflow-auto">
+                {results.map((tour, i) => (
+                  <li key={tour.id} role="option" aria-selected={i === active}>
+                    <button
+                      type="button"
+                      onClick={() => goToTour(tour.id)}
+                      onMouseEnter={() => setActive(i)}
+                      className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+                        i === active ? "bg-fog" : ""
+                      }`}
+                    >
+                      <span className="truncate text-foreground">{tour.title}</span>
+                      <span className="shrink-0 font-mono text-xs text-muted">
+                        {formatPrice(tour.price)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -189,10 +247,10 @@ export function Header() {
   }, [isLanding, show, scheduleHide]);
 
   const headerClass = isLanding
-    ? `fixed inset-x-0 top-0 z-10 border-b border-border bg-surface/90 backdrop-blur transition-transform duration-300 ease-out ${
+    ? `fixed inset-x-0 top-0 z-10 border-b border-border bg-background/90 backdrop-blur transition-transform duration-300 ease-out ${
         hidden ? "-translate-y-full" : "translate-y-0"
       }`
-    : "sticky top-0 z-10 border-b border-border bg-surface/90 backdrop-blur";
+    : "sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur";
 
   return (
     <>
@@ -216,29 +274,35 @@ export function Header() {
         }
         className={headerClass}
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-          <div className="flex items-center gap-6">
+        <div className="mx-auto grid h-16 max-w-6xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 px-4 lg:h-[72px] lg:gap-x-6">
+          {/* Левый гребень: лого + кабинет */}
+          <div className="flex min-w-0 items-center gap-5">
             <Link href="/" className="flex shrink-0 items-center">
               <Logo />
             </Link>
-            <nav className="flex items-center gap-1">
-              <NavLink href="/">Витрина</NavLink>
-              <NavLink href="/tours">Каталог</NavLink>
-              {user ? <NavLink href="/cabinet">Личный кабинет</NavLink> : null}
-            </nav>
+            {user ? (
+              <Link
+                href="/cabinet"
+                className="hidden h-10 items-center rounded-control px-3 text-sm text-muted transition-colors duration-200 hover:text-foreground lg:inline-flex"
+              >
+                Личный кабинет
+              </Link>
+            ) : null}
           </div>
 
-          <div className="flex items-center gap-2">
-            <SearchField />
-            {isLanding ? null : <ThemeToggle />}
+          {/* Седловина: поиск */}
+          <SearchField />
+
+          {/* Правый гребень: действия */}
+          <div className="flex items-center justify-end gap-2">
             {user ? (
               <>
-                <span className="hidden text-sm text-muted sm:inline">
+                <span className="hidden max-w-[180px] truncate font-mono text-xs text-faint xl:inline-block">
                   {user.email}
                 </span>
                 <button
                   onClick={logout}
-                  className="rounded-control border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-fog hover:text-foreground"
+                  className="inline-flex h-10 items-center rounded-control px-3 text-sm font-medium text-muted transition-colors duration-200 hover:text-foreground"
                 >
                   Выйти
                 </button>
@@ -247,13 +311,13 @@ export function Header() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-control px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-fog hover:text-foreground"
+                  className="relative hidden h-10 items-center rounded-control px-3 text-sm font-medium text-muted transition-colors duration-200 hover:text-foreground after:absolute after:inset-x-3 after:bottom-[9px] after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-200 hover:after:scale-x-100 focus-visible:outline-none focus-visible:shadow-glow motion-reduce:after:transition-none sm:inline-flex"
                 >
                   Войти
                 </Link>
                 <Link
                   href="/register"
-                  className="rounded-control bg-accent px-3 py-2 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover"
+                  className="inline-flex h-10 items-center rounded-control bg-accent px-4 text-sm font-medium text-accent-contrast transition-colors duration-200 hover:bg-accent-hover focus-visible:outline-none focus-visible:shadow-glow"
                 >
                   Регистрация
                 </Link>
